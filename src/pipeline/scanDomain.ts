@@ -25,6 +25,9 @@ const SCRIPT_TIMEOUT_MS = 3_000;
 const HOMEPAGE_MAX_BYTES = 200 * 1024;
 const SCRIPT_MAX_BYTES = 50 * 1024;
 const MAX_SCRIPT_CANDIDATES = 3;
+const GENERIC_TOKEN_MIN_LENGTH = 20;
+const GENERIC_TOKEN_MIN_ENTROPY = 3.6;
+const CONTEXT_WINDOW_CHARS = 80;
 
 const isValidHostname = z
 	.function()
@@ -402,6 +405,100 @@ const isLikelyJwt = z
 		return true;
 	});
 
+const shannonEntropy = z
+	.function()
+	.args(z.string())
+	.returns(z.number().nonnegative())
+	.implement((value) => {
+		if (value.length === 0) {
+			return 0;
+		}
+
+		const counts = new Map<string, number>();
+
+		for (const char of value) {
+			counts.set(char, (counts.get(char) ?? 0) + 1);
+		}
+
+		let entropy = 0;
+
+		for (const count of counts.values()) {
+			const probability = count / value.length;
+			entropy -= probability * Math.log2(probability);
+		}
+
+		return entropy;
+	});
+
+const hasGenericTokenEntropy = z
+	.function()
+	.args(z.string())
+	.returns(z.boolean())
+	.implement((value) => {
+		if (value.length < GENERIC_TOKEN_MIN_LENGTH) {
+			return false;
+		}
+
+		return shannonEntropy(value) >= GENERIC_TOKEN_MIN_ENTROPY;
+	});
+
+const getDetectionContext = z
+	.function()
+	.args(z.string(), z.number().int().nonnegative(), z.number().int().positive())
+	.returns(z.string())
+	.implement((body, start, end) => {
+		const contextStart = Math.max(0, start - CONTEXT_WINDOW_CHARS);
+		const contextEnd = Math.min(body.length, end + CONTEXT_WINDOW_CHARS);
+
+		return body.slice(contextStart, contextEnd).toLowerCase();
+	});
+
+const hasPositiveContext = z
+	.function()
+	.args(z.string(), z.number().int().nonnegative(), z.number().int().positive())
+	.returns(z.boolean())
+	.implement((body, start, end) => {
+		const context = getDetectionContext(body, start, end);
+
+		return /\b(secret|token|auth|authorization|password|api[_-]?key|apikey)\b/i.test(context);
+	});
+
+const hasNegativeContext = z
+	.function()
+	.args(z.string(), z.number().int().nonnegative(), z.number().int().positive())
+	.returns(z.boolean())
+	.implement((body, start, end) => {
+		const context = getDetectionContext(body, start, end);
+
+		return /\b(analytics|measurement|tracking|public|example)\b/i.test(context);
+	});
+
+const isAllowlistedValue = z
+	.function()
+	.args(z.string())
+	.returns(z.boolean())
+	.implement((value) => {
+		const lowerValue = value.toLowerCase();
+
+		if (/^pk_(live|test)_[a-z0-9]{6,}$/i.test(value)) {
+			return true;
+		}
+
+		if (/^g-[a-z0-9]{4,}$/i.test(value) || /^ua-\d{4,}-\d+$/i.test(value)) {
+			return true;
+		}
+
+		if (/^ca-pub-\d{10,}$/i.test(value)) {
+			return true;
+		}
+
+		if (lowerValue.includes("example")) {
+			return true;
+		}
+
+		return false;
+	});
+
 const detectHighConfidenceSecret = z
 	.function()
 	.args(z.string())
@@ -454,11 +551,20 @@ const detectHighConfidenceSecret = z
 
 			const prefixLength = match[1]?.length ?? 0;
 			const start = match.index + prefixLength;
+			const end = start + value.length;
+
+			if (!hasPositiveContext(body, start, end)) {
+				continue;
+			}
+
+			if (hasNegativeContext(body, start, end)) {
+				continue;
+			}
 
 			return {
 				value,
 				start,
-				end: start + value.length
+				end
 			};
 		}
 
@@ -472,11 +578,55 @@ const detectHighConfidenceSecret = z
 			}
 
 			const value = match[0];
+			const start = match.index;
+			const end = start + value.length;
 
 			return {
 				value,
-				start: match.index,
-				end: match.index + value.length
+				start,
+				end
+			};
+		}
+
+		const genericTokenRegex = /(["'`])([A-Za-z0-9_./+=-]{16,})\1/g;
+
+		while (true) {
+			const match = genericTokenRegex.exec(body);
+
+			if (match === null) {
+				break;
+			}
+
+			const value = match[2] ?? "";
+
+			if (value.length === 0) {
+				continue;
+			}
+
+			const quoteLength = (match[1] ?? "").length;
+			const start = match.index + quoteLength;
+			const end = start + value.length;
+
+			if (isAllowlistedValue(value)) {
+				continue;
+			}
+
+			if (!hasGenericTokenEntropy(value)) {
+				continue;
+			}
+
+			if (!hasPositiveContext(body, start, end)) {
+				continue;
+			}
+
+			if (hasNegativeContext(body, start, end)) {
+				continue;
+			}
+
+			return {
+				value,
+				start,
+				end
 			};
 		}
 

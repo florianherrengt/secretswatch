@@ -121,4 +121,47 @@ describe("scanDomain local fixtures", () => {
 		expect(result.findings).toHaveLength(0);
 	});
 
+	it("detects valid generic token with strict context", async () => {
+		const result = await scanDomain({
+			domain: `localhost:${TEST_PORT}/sandbox/website/examples/generic-token-valid/`
+		});
+
+		expect(result.status).toBe("success");
+		expect(result.findings).toHaveLength(1);
+		expect(result.findings[0]?.file).toContain("/sandbox/website/examples/generic-token-valid/assets/main.js");
+		expect(result.findings[0]?.snippet).toContain("[REDACTED]");
+	});
+
+	it("ignores short generic token values", async () => {
+		const result = await scanDomain({
+			domain: `localhost:${TEST_PORT}/sandbox/website/examples/generic-token-invalid/`
+		});
+
+		expect(result.status).toBe("success");
+		expect(result.findings).toHaveLength(0);
+	});
+
+	it("ignores allowlisted publishable keys", async () => {
+		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/public-key/` });
+
+		expect(result.status).toBe("success");
+		expect(result.findings).toHaveLength(0);
+	});
+
+	it("ignores analytics identifiers", async () => {
+		const result = await scanDomain({
+			domain: `localhost:${TEST_PORT}/sandbox/website/examples/analytics-context/`
+		});
+
+		expect(result.status).toBe("success");
+		expect(result.findings).toHaveLength(0);
+	});
+
+	it("ignores high entropy values without secret context", async () => {
+		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/weak-context/` });
+
+		expect(result.status).toBe("success");
+		expect(result.findings).toHaveLength(0);
+	});
+
 });

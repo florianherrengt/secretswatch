@@ -18,6 +18,7 @@ export const scans = pgTable("scans", {
 	id: uuid("id").primaryKey(),
 	domainId: uuid("domain_id")
 		.notNull()
+		// eslint-disable-next-line custom/no-raw-functions
 		.references(() => domains.id),
 	status: scanStatusEnum("status").notNull(),
 	startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }).notNull(),
@@ -28,6 +29,7 @@ export const findings = pgTable("findings", {
 	id: uuid("id").primaryKey(),
 	scanId: uuid("scan_id")
 		.notNull()
+		// eslint-disable-next-line custom/no-raw-functions
 		.references(() => scans.id),
 	type: findingTypeEnum("type").notNull(),
 	file: text("file").notNull(),

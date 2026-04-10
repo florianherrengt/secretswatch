@@ -4,7 +4,18 @@ import type { Context } from "hono";
 
 const sandboxWebsiteRoutes = new Hono();
 
-const testScenarioSchema = z.enum(["pem-key", "jwt", "credential-url", "no-leak", "multiple"]);
+const testScenarioSchema = z.enum([
+	"pem-key",
+	"jwt",
+	"credential-url",
+	"no-leak",
+	"multiple",
+	"generic-token-valid",
+	"generic-token-invalid",
+	"public-key",
+	"analytics-context",
+	"weak-context"
+]);
 
 type TestScenario = z.infer<typeof testScenarioSchema>;
 
@@ -33,6 +44,31 @@ const scenarioCopy: Record<TestScenario, { title: string; issue: string; findHin
 		title: "Multiple scripts, first one leaks",
 		issue: "Three scripts are loaded; the first one contains the secret.",
 		findHint: "In Network, verify load order and inspect /assets/first.js before others."
+	},
+	"generic-token-valid": {
+		title: "Generic token with strong context",
+		issue: "A high-entropy token is assigned to an API key variable.",
+		findHint: "Inspect /assets/main.js and find a long random string near apiKey."
+	},
+	"generic-token-invalid": {
+		title: "Short ID should be ignored",
+		issue: "A short ID value exists but should not be flagged as a secret.",
+		findHint: "Inspect /assets/main.js and confirm only a short abc123 value appears."
+	},
+	"public-key": {
+		title: "Publishable key allowlisted",
+		issue: "A known public key format is present and should be suppressed.",
+		findHint: "Inspect /assets/main.js for a pk_live_ prefixed value."
+	},
+	"analytics-context": {
+		title: "Analytics identifier context",
+		issue: "An analytics measurement identifier appears and should not alert.",
+		findHint: "Inspect /assets/main.js for measurementId and a G- prefixed value."
+	},
+	"weak-context": {
+		title: "Weak context should be ignored",
+		issue: "A long random-looking string appears without secret-related context.",
+		findHint: "Inspect /assets/main.js and check that only a generic value variable is used."
 	}
 };
 
@@ -65,6 +101,21 @@ const scenarioAssets: Record<TestScenario, Record<string, string>> = {
 		].join("\n"),
 		"second.js": 'console.log("second script without leaks");',
 		"third.js": 'console.log("third script without leaks");'
+	},
+	"generic-token-valid": {
+		"main.js": 'const apiKey = "V9wQ1zN7mB4cK2rT8yP0sD6fH3jL5xA9";'
+	},
+	"generic-token-invalid": {
+		"main.js": 'const id = "abc123";'
+	},
+	"public-key": {
+		"main.js": 'const key = "pk_live_123456";'
+	},
+	"analytics-context": {
+		"main.js": 'const measurementId = "G-123456";'
+	},
+	"weak-context": {
+		"main.js": 'const value = "V9wQ1zN7mB4cK2rT8yP0sD6fH3jL5xA9";'
 	}
 };
 
