@@ -9,6 +9,7 @@ import dedupeRoutes from "./dedupe/index.js";
 import sourceRoutes from "./source/index.js";
 import adminQueueRoutes from "./admin/queues/index.js";
 import debugRoutes from "./debug/index.js";
+import domainRoutes from "./domains/index.js";
 
 const app = new Hono();
 
@@ -16,6 +17,7 @@ app.route("/", healthzRoutes);
 app.route("/", authRoutes);
 app.route("/", homeRoutes);
 app.route("/sandbox/website", sandboxWebsiteRoutes);
+app.route("/domains", domainRoutes);
 app.route("/scan", scanRoutes);
 app.route("/qualify", qualifyRoutes);
 app.route("/dedupe", dedupeRoutes);

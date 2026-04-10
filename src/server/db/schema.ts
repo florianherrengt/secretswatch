@@ -61,6 +61,12 @@ export const loginTokens = pgTable("login_tokens", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull()
 });
 
+export const userDomains = pgTable("user_domains", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	domain: text("domain").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull()
+});
+
 export const sessions = pgTable("sessions", {
 	id: uuid("id").primaryKey(),
 	userId: uuid("user_id")

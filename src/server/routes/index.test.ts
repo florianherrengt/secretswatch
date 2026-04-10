@@ -65,6 +65,26 @@ describe("GET /admin/queues", () => {
 	});
 });
 
+describe("GET /domains", () => {
+	it("returns 401 when not authenticated", async () => {
+		const res = await app.request("/domains");
+		expect(res.status).toBe(401);
+		const body = await res.json();
+		expect(body).toHaveProperty("error");
+	});
+});
+
+describe("POST /domains", () => {
+	it("returns 401 when not authenticated", async () => {
+		const res = await app.request("/domains", {
+			method: "POST",
+			headers: { "content-type": "application/x-www-form-urlencoded" },
+			body: "domain=example.com"
+		});
+		expect(res.status).toBe(401);
+	});
+});
+
 describe("POST /qualify", () => {
 	it("returns validation error when input is invalid", async () => {
 		const res = await app.request("/qualify", {

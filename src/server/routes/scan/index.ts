@@ -17,63 +17,130 @@ import {
 	upsertDomainRecord
 } from "../../scan/scanJob.js";
 import { enqueueScanJob } from "../../scan/scanQueue.js";
-import { requireAuth } from "../../auth/middleware.js";
 
 const scanRoutes = new Hono();
 
+const scanWindowMs = Number(process.env.SCAN_RATE_LIMIT_WINDOW_MS ?? "60000");
+const scanMaxRequestsPerWindow = Number(process.env.SCAN_RATE_LIMIT_MAX_REQUESTS ?? "10");
+const scanMaxConcurrentRequests = Number(process.env.SCAN_MAX_CONCURRENT_REQUESTS ?? "20");
+
+const scanRequestsByIp = new Map<string, number[]>();
+const scanRequestState = {
+	inFlightRequests: 0
+};
+
 const scanFormSchema = z.object({
-	domain: z.string().trim().min(1)
+	domain: z.string().trim().min(1).max(2048)
 });
 
 const scanParamsSchema = z.object({
 	scanId: z.string().uuid()
 });
 
+const getClientIp = z
+	.function()
+	.args(z.custom<Context>())
+	.returns(z.string().min(1))
+	.implement((c) => {
+		const cfConnectingIp = c.req.header("cf-connecting-ip");
+
+		if (cfConnectingIp && cfConnectingIp.trim().length > 0) {
+			return cfConnectingIp.trim();
+		}
+
+		const xForwardedFor = c.req.header("x-forwarded-for");
+
+		if (!xForwardedFor) {
+			return "unknown";
+		}
+
+		const firstForwardedIp = xForwardedFor
+			.split(",")
+			.map((segment) => segment.trim())
+			.find((segment) => segment.length > 0);
+
+		return firstForwardedIp ?? "unknown";
+	});
+
+const hasRateLimitCapacity = z
+	.function()
+	.args(z.string().min(1), z.number().int().nonnegative())
+	.returns(z.boolean())
+	.implement((clientIp, nowMs) => {
+		const timestamps = scanRequestsByIp.get(clientIp) ?? [];
+		const cutoff = nowMs - scanWindowMs;
+		const recentTimestamps = timestamps.filter((timestamp) => timestamp > cutoff);
+
+		if (recentTimestamps.length >= scanMaxRequestsPerWindow) {
+			scanRequestsByIp.set(clientIp, recentTimestamps);
+			return false;
+		}
+
+		recentTimestamps.push(nowMs);
+		scanRequestsByIp.set(clientIp, recentTimestamps);
+		return true;
+	});
+
 scanRoutes.post(
 	"/",
-	requireAuth,
 	z
 		.function()
 		.args(z.custom<Context>())
 		.returns(z.custom<Response | Promise<Response>>())
 		.implement(async (c) => {
-			const body = await c.req.parseBody();
-			const parsedForm = scanFormSchema.safeParse({
-				domain: typeof body.domain === "string" ? body.domain : ""
-			});
+			const clientIp = getClientIp(c);
+			const now = Date.now();
 
-			if (!parsedForm.success) {
-				return c.html("<h1>Bad Request</h1><p>Invalid domain input.</p>", 400);
+			if (!hasRateLimitCapacity(clientIp, now)) {
+				return c.html("<h1>Too Many Requests</h1><p>Please wait before starting another scan.</p>", 429);
 			}
 
-			const normalizedDomain = normalizeSubmittedDomain(parsedForm.data.domain);
-			const jobPayload = scanQueueJobDataSchema.parse({
-				domain: normalizedDomain
-			});
-			const domainRecord = await upsertDomainRecord(normalizedDomain);
-			const scanRecord = await createPendingScanRecord(domainRecord.id);
+			if (scanRequestState.inFlightRequests >= scanMaxConcurrentRequests) {
+				return c.html("<h1>Busy</h1><p>The scanner is at capacity. Try again in a moment.</p>", 503);
+			}
+
+			scanRequestState.inFlightRequests += 1;
 
 			try {
-				await enqueueScanJob(scanRecord.id, jobPayload);
-			} catch (error) {
-				await markScanAsFailed(scanRecord.id);
-				const normalizedError =
-					error instanceof Error ? error : new Error("Failed to enqueue scan job");
-
-				console.error("[scan-route] Failed to enqueue scan job", {
-					scanId: scanRecord.id,
-					domain: normalizedDomain,
-					error: normalizedError.message
+				const body = await c.req.parseBody();
+				const parsedForm = scanFormSchema.safeParse({
+					domain: typeof body.domain === "string" ? body.domain : ""
 				});
-			}
 
-			return c.redirect(`/scan/${scanRecord.id}`, 302);
+				if (!parsedForm.success) {
+					return c.html("<h1>Bad Request</h1><p>Invalid domain input.</p>", 400);
+				}
+
+				const normalizedDomain = normalizeSubmittedDomain(parsedForm.data.domain);
+				const jobPayload = scanQueueJobDataSchema.parse({
+					domain: normalizedDomain
+				});
+				const domainRecord = await upsertDomainRecord(normalizedDomain);
+				const scanRecord = await createPendingScanRecord(domainRecord.id);
+
+				try {
+					await enqueueScanJob(scanRecord.id, jobPayload);
+				} catch (error) {
+					await markScanAsFailed(scanRecord.id);
+					const normalizedError =
+						error instanceof Error ? error : new Error("Failed to enqueue scan job");
+
+					console.error("[scan-route] Failed to enqueue scan job", {
+						scanId: scanRecord.id,
+						domain: normalizedDomain,
+						error: normalizedError.message
+					});
+				}
+
+				return c.redirect(`/scan/${scanRecord.id}`, 302);
+			} finally {
+				scanRequestState.inFlightRequests = Math.max(0, scanRequestState.inFlightRequests - 1);
+			}
 		})
 );
 
 scanRoutes.get(
 	"/:scanId",
-	requireAuth,
 	z
 		.function()
 		.args(z.custom<Context>())

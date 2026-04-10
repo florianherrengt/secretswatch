@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createAuthenticatedSession } from "./support/auth";
 
 const domain = process.env.DOMAIN ?? "127.0.0.1:3000";
 
@@ -121,36 +122,8 @@ test.describe("Magic Link Authentication", () => {
   });
 
   test("logout clears session", async ({ request }) => {
-    const timestamp = Date.now();
-    const testEmail = `test-logout-${timestamp}@example.com`;
-
-    await request.post(`${baseUrl}/auth/request-link`, {
-      headers: { "Content-Type": "application/json" },
-      data: { email: testEmail }
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const emailsResponse = await request.get(`${baseUrl}/debug/emails`);
-    const emails = await emailsResponse.json();
-    
-    const testEmails = emails.filter((email: MockEmail) => email.to === testEmail);
-    const latestEmail = testEmails.sort(
-      (a: MockEmail, b: MockEmail) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )[0];
-
-    const linkMatch = latestEmail.html.match(/href="([^"]*auth\/verify\?token=[^"]*)"/);
-    const magicLink = linkMatch ? linkMatch[1] : null;
-
-    const url = magicLink!.startsWith("http") ? magicLink! : `${baseUrl}${magicLink}`;
-
-    const verifyResponse = await request.get(url, {
-      maxRedirects: 0
-    });
-
-    const setCookieHeader = verifyResponse.headers()["set-cookie"];
-    const sessionMatch = setCookieHeader?.match(/session_id=([^;]+)/);
-    const sessionId = sessionMatch ? sessionMatch[1] : null;
+    const session = await createAuthenticatedSession(request, `test-logout-${Date.now()}@example.com`);
+    const sessionId = session.sessionId;
 
     const whoamiBeforeResponse = await request.get(`${baseUrl}/auth/whoami`, {
       headers: { "Cookie": `session_id=${sessionId}` }

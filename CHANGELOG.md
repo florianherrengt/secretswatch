@@ -258,14 +258,24 @@ The system now has production-ready passwordless auth that is fully testable loc
 
 ---
 
-# Current State
+## v0.12 — User Domains + Production Hardening (Step 11)
 
-The system now supports:
+**Introduced personal domain tracking and hardened the scan surface for production use**
 
-- scanning real or simulated websites
-- detecting high-confidence leaks with layered validation
-- storing and displaying results across async scan lifecycle states
-- processing scans through an inspectable queue with retry visibility
-- debugging qualification logic and deterministic scenarios
-- discovering domains from external sources and feeding them into the scan pipeline
-- authenticating users via passwordless magic links with inspectable local email delivery
+- Added user-owned domain management:
+  - `GET /domains` — list all tracked domains with add form
+  - `POST /domains` — add a domain (validates, normalizes, persists)
+  - Each domain links directly to scan via existing pipeline
+
+- Hardened scan endpoint with rate limiting and concurrency control:
+  - Per-IP sliding window rate limiting (configurable)
+  - Global in-flight request cap to prevent queue flooding
+  - Removed auth gate from `/scan` to allow anonymous scans with abuse protection
+
+- Unified e2e auth infrastructure:
+  - Shared `createAuthenticatedSession` helper with magic-link flow
+  - Reusable `authed` fixtures (`authHeaders`, `authedPage`) for all protected-route tests
+  - Migrated all existing e2e suites to shared helpers, eliminating duplicated auth plumbing
+
+**Outcome:**
+Users can now build a personal watchlist of domains they care about, and the scan endpoint is safe for unauthenticated production traffic. All e2e tests share a single auth foundation.
