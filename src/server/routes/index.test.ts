@@ -56,6 +56,16 @@ describe("GET /dedupe", () => {
 	});
 });
 
+describe("GET /admin/queues", () => {
+	it("returns bull board html", async () => {
+		const res = await app.request("/admin/queues");
+		expect(res.status).toBe(200);
+		expect(res.headers.get("content-type")).toContain("text/html");
+		const html = await res.text();
+		expect(html).toContain("Bull Dashboard");
+	});
+});
+
 describe("POST /qualify", () => {
 	it("returns validation error when input is invalid", async () => {
 		const res = await app.request("/qualify", {

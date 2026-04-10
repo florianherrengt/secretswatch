@@ -26,7 +26,7 @@ export const HomePage: FC<HomePageProps> = z
 				<section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 					<h1 class="text-2xl font-semibold tracking-tight">Secret Detector</h1>
 					<p class="mt-2 text-sm text-gray-600">
-						Submit a domain target to run a synchronous scan and persist findings.
+						Submit a domain target to enqueue an async scan and persist findings.
 					</p>
 					<p class="mt-2 text-sm text-gray-600">
 						Need end-to-end dedupe diagnostics? Use the <a href="/dedupe" class="underline">dedupe debug tool</a>.

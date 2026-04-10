@@ -1,18 +1,21 @@
 import { z } from "zod";
 import type { FC, PropsWithChildren } from "hono/jsx";
 
-type LayoutProps = PropsWithChildren<{ title: string }>;
+type LayoutProps = PropsWithChildren<{ title: string; autoRefreshSeconds?: number }>;
 
 export const Layout: FC<LayoutProps> = z
 	.function()
 	.args(z.custom<LayoutProps>())
 	.returns(z.custom<ReturnType<FC<LayoutProps>>>())
-	.implement(({ title, children }) => {
+	.implement(({ title, children, autoRefreshSeconds }) => {
 		return (
 			<html lang="en">
 				<head>
 					<meta charset="utf-8" />
 					<meta name="viewport" content="width=device-width, initial-scale=1" />
+					{typeof autoRefreshSeconds === "number" && autoRefreshSeconds > 0 ? (
+						<meta http-equiv="refresh" content={String(autoRefreshSeconds)} />
+					) : null}
 					<title>{title} | Secret Detector</title>
 					<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 				</head>

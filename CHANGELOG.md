@@ -172,11 +172,29 @@ System now maintains a clean, non-duplicative finding history that is suitable f
 
 ---
 
+## v0.8 — Async Scan Queue + Visibility (Step 7)
+
+**Moved scan execution into an asynchronous queue with first-class operational visibility**
+
+- Converted manual scan flow to non-blocking execution: submit domain, create pending scan, enqueue job, redirect immediately to scan details
+- Introduced a single BullMQ-backed `scanQueue` worker path that reuses existing qualification/detection/deduplication behavior while updating scan lifecycle states (`pending` -> `success`/`failed`)
+- Added resilient job processing with explicit failure propagation so queue failures are visible and actionable instead of silent
+- Preserved per-scan finding visibility even when fingerprints were seen previously, while keeping global deduplication semantics for new-signal accounting
+- Added async-aware scan result UX with pending/failed/success states and server-driven auto-refresh until completion
+- Exposed Bull Board at `/admin/queues` to inspect payloads, status transitions, errors, and retry failed jobs
+- Expanded end-to-end coverage for async completion and repeated leak scans to prevent regressions in queued mode
+
+**Outcome:**
+The product is now non-blocking, observable, and operationally debuggable, making it ready to handle higher scan volume with clear runtime insight.
+
+---
+
 # Current State
 
 The system now supports:
 
 - scanning real or simulated websites
 - detecting high-confidence leaks with layered validation
-- storing and displaying results
+- storing and displaying results across async scan lifecycle states
+- processing scans through an inspectable queue with retry visibility
 - debugging qualification logic and deterministic scenarios
