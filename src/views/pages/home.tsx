@@ -28,6 +28,9 @@ export const HomePage: FC<HomePageProps> = z
 					<p class="mt-2 text-sm text-gray-600">
 						Submit a domain target to run a synchronous scan and persist findings.
 					</p>
+					<p class="mt-2 text-sm text-gray-600">
+						Need end-to-end dedupe diagnostics? Use the <a href="/dedupe" class="underline">dedupe debug tool</a>.
+					</p>
 
 					<form action="/scan" method="post" class="mt-5 space-y-3">
 						<label for="domain" class="block text-sm font-medium text-gray-700">

@@ -4,6 +4,7 @@ import homeRoutes from "./home/index.js";
 import sandboxWebsiteRoutes from "./sandbox/website/index.js";
 import scanRoutes from "./scan/index.js";
 import qualifyRoutes from "./qualify/index.js";
+import dedupeRoutes from "./dedupe/index.js";
 
 const app = new Hono();
 
@@ -12,5 +13,6 @@ app.route("/", homeRoutes);
 app.route("/sandbox/website", sandboxWebsiteRoutes);
 app.route("/scan", scanRoutes);
 app.route("/qualify", qualifyRoutes);
+app.route("/dedupe", dedupeRoutes);
 
 export default app;

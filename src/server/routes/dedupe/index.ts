@@ -8,12 +8,16 @@ import { Pool } from "pg";
 import { render } from "../../../lib/response.js";
 import { scanDomain } from "../../../pipeline/scanDomain.js";
 import { domainSchema } from "../../../schemas/domain.js";
-import { findingSchema } from "../../../schemas/finding.js";
 import { scanSchema } from "../../../schemas/scan.js";
-import { ScanResultPage, scanResultPagePropsSchema } from "../../../views/pages/scanResult.js";
+import {
+	DedupeInputPage,
+	DedupeResultPage,
+	dedupeInputPagePropsSchema,
+	dedupeResultPagePropsSchema
+} from "../../../views/pages/dedupe.js";
 import { domains, findings, scans } from "../../db/schema.js";
 
-const scanRoutes = new Hono();
+const dedupeRoutes = new Hono();
 
 const DATABASE_URL_FALLBACK =
 	"postgresql://secret_detector:secret_detector@localhost:5432/secret_detector";
@@ -24,12 +28,8 @@ const db = drizzle(
 	})
 );
 
-const scanFormSchema = z.object({
+const dedupeFormSchema = z.object({
 	domain: z.string().min(1)
-});
-
-const scanParamsSchema = z.object({
-	scanId: z.string().uuid()
 });
 
 const normalizeSubmittedDomain = z
@@ -55,17 +55,28 @@ const normalizeSubmittedDomain = z
 		return trimmed;
 	});
 
-const scanFindingSchema = z.object({
-	type: z.literal("secret"),
-	file: z.string(),
-	snippet: z.string(),
-	fingerprint: z.string()
-});
-
 const dedupeFindingsWithinScan = z
 	.function()
-	.args(z.array(scanFindingSchema))
-	.returns(z.array(scanFindingSchema))
+	.args(
+		z.array(
+			z.object({
+				type: z.literal("secret"),
+				file: z.string(),
+				snippet: z.string(),
+				fingerprint: z.string()
+			})
+		)
+	)
+	.returns(
+		z.array(
+			z.object({
+				type: z.literal("secret"),
+				file: z.string(),
+				snippet: z.string(),
+				fingerprint: z.string()
+			})
+		)
+	)
 	.implement((rawFindings) => {
 		const seenFingerprints = new Set<string>();
 		const dedupedFindings: typeof rawFindings = [];
@@ -82,7 +93,19 @@ const dedupeFindingsWithinScan = z
 		return dedupedFindings;
 	});
 
-scanRoutes.post(
+dedupeRoutes.get(
+	"/",
+	z
+		.function()
+		.args(z.custom<Context>())
+		.returns(z.custom<Response | Promise<Response>>())
+		.implement((c) => {
+			const viewProps = dedupeInputPagePropsSchema.parse({});
+			return c.html(render(DedupeInputPage, viewProps));
+		})
+);
+
+dedupeRoutes.post(
 	"/",
 	z
 		.function()
@@ -90,12 +113,17 @@ scanRoutes.post(
 		.returns(z.custom<Response | Promise<Response>>())
 		.implement(async (c) => {
 			const body = await c.req.parseBody();
-			const parsedForm = scanFormSchema.safeParse({
+			const parsedForm = dedupeFormSchema.safeParse({
 				domain: typeof body.domain === "string" ? body.domain : ""
 			});
 
 			if (!parsedForm.success) {
-				return c.html("<h1>Bad Request</h1><p>Invalid domain input.</p>", 400);
+				const viewProps = dedupeInputPagePropsSchema.parse({
+					errorMessage: "Invalid domain input.",
+					defaultDomain: typeof body.domain === "string" ? body.domain : ""
+				});
+
+				return c.html(render(DedupeInputPage, viewProps), 400);
 			}
 
 			const normalizedDomain = normalizeSubmittedDomain(parsedForm.data.domain);
@@ -142,15 +170,6 @@ scanRoutes.post(
 
 			const pipelineResult = await scanDomain({ domain: normalizedDomain });
 			const finishedAt = new Date();
-
-			await db
-				.update(scans)
-				.set({
-					status: pipelineResult.status,
-					finishedAt
-				})
-				.where(eq(scans.id, scanRecord.id));
-
 			const dedupedFindings = dedupeFindingsWithinScan(pipelineResult.findings);
 			const dedupedFingerprints = dedupedFindings.map((finding) => finding.fingerprint);
 			const existingFingerprintRows =
@@ -166,6 +185,14 @@ scanRoutes.post(
 			const newFindings = dedupedFindings.filter(
 				(finding) => !existingFingerprints.has(finding.fingerprint)
 			);
+
+			await db
+				.update(scans)
+				.set({
+					status: pipelineResult.status,
+					finishedAt
+				})
+				.where(eq(scans.id, scanRecord.id));
 
 			if (newFindings.length > 0) {
 				await db.insert(findings).values(
@@ -183,62 +210,16 @@ scanRoutes.post(
 				);
 			}
 
-			return c.redirect(`/scan/${scanRecord.id}`, 302);
-		})
-);
-
-scanRoutes.get(
-	"/:scanId",
-	z
-		.function()
-		.args(z.custom<Context>())
-		.returns(z.custom<Response | Promise<Response>>())
-		.implement(async (c) => {
-			const params = scanParamsSchema.safeParse(c.req.param());
-
-			if (!params.success) {
-				return c.text("Not found", 404);
-			}
-
-			const scanRows = await db.select().from(scans).where(eq(scans.id, params.data.scanId)).limit(1);
-
-			if (scanRows.length === 0) {
-				return c.text("Not found", 404);
-			}
-
-			const scanRecord = scanSchema.parse(scanRows[0]);
-			const domainRows = await db
-				.select()
-				.from(domains)
-				.where(eq(domains.id, scanRecord.domainId))
-				.limit(1);
-
-			if (domainRows.length === 0) {
-				return c.text("Not found", 404);
-			}
-
-			const domainRecord = domainSchema.parse(domainRows[0]);
-			const findingRows = await db
-				.select()
-				.from(findings)
-				.where(eq(findings.scanId, scanRecord.id));
-			const findingRecords = findingSchema.array().parse(findingRows);
-
-			const viewProps = scanResultPagePropsSchema.parse({
-				domain: domainRecord.hostname,
-				status: scanRecord.status,
-				startedAtIso: scanRecord.startedAt.toISOString(),
-				finishedAtIso: scanRecord.finishedAt ? scanRecord.finishedAt.toISOString() : null,
-				findings: findingRecords.map((finding) => {
-					return {
-						file: finding.file,
-						snippet: finding.snippet
-					};
-				})
+			const viewProps = dedupeResultPagePropsSchema.parse({
+				domain: normalizedDomain,
+				rawFindingsCount: pipelineResult.findings.length,
+				afterInternalDedupeCount: dedupedFindings.length,
+				newFindingsInsertedCount: newFindings.length,
+				skippedExistingCount: dedupedFindings.length - newFindings.length
 			});
 
-			return c.html(render(ScanResultPage, viewProps));
+			return c.html(render(DedupeResultPage, viewProps));
 		})
 );
 
-export default scanRoutes;
+export default dedupeRoutes;

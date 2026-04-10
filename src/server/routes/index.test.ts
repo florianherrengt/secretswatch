@@ -44,6 +44,18 @@ describe("GET /qualify", () => {
 	});
 });
 
+describe("GET /dedupe", () => {
+	it("returns dedupe input page", async () => {
+		const res = await app.request("/dedupe");
+		expect(res.status).toBe(200);
+		expect(res.headers.get("content-type")).toContain("text/html");
+		const html = await res.text();
+		expect(html).toContain("Deduplication Debug");
+		expect(html).toContain('<form action="/dedupe" method="post"');
+		expect(html).toContain('name="domain"');
+	});
+});
+
 describe("POST /qualify", () => {
 	it("returns validation error when input is invalid", async () => {
 		const res = await app.request("/qualify", {
