@@ -39,7 +39,7 @@ describe("GET /qualify", () => {
 		expect(res.status).toBe(200);
 		const html = await res.text();
 		expect(html).toContain("Qualification Result");
-		expect(html).toContain("NOT QUALIFIED");
+		expect(html).toContain("not qualified");
 		expect(html).toContain("Failed: could not fetch homepage");
 	});
 });

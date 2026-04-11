@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { FC } from "hono/jsx";
 import { sourceDebugResultSchema } from "../../pipeline/sources/index.js";
+import { ScanCard } from "../components/ScanCard.js";
+import { Section } from "../components/Section.js";
 import { Layout } from "../layout.js";
 
 export const sourceListItemSchema = z.object({
@@ -29,17 +31,15 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 	.implement(({ source, result, input }) => {
 		return (
 			<Layout title={`${source.label} Debug`}>
-				<section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-					<h1 class="text-2xl font-semibold tracking-tight">{source.label} Debug</h1>
-					<p class="mt-2 text-sm text-gray-600">
-						{source.description}
-					</p>
-
-					<form method="get" action={`/debug/sources/${source.key}`} class="mt-6 space-y-3">
+				<div class="space-y-6">
+					<h1 class="text-xl font-semibold text-foreground">{source.label} Debug</h1>
+					<Section title="Debug Input" description={source.description}>
+						<ScanCard>
+							<form method="get" action={`/debug/sources/${source.key}`} class="space-y-3">
 						<input type="hidden" name="source" value={source.key} />
 						{source.key === "crtsh" ? (
 							<>
-								<label for={`${source.key}-tld`} class="block text-sm font-medium text-gray-700">
+								<label for={`${source.key}-tld`} class="block text-sm font-medium text-foreground">
 									TLD suffix (e.g. io)
 								</label>
 								<input
@@ -49,13 +49,13 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 									required
 									placeholder="io"
 									value={input.tld ?? ""}
-									class="w-48 rounded-md border border-gray-300 px-3 py-2 text-sm"
+									class="w-48 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
 								/>
 							</>
 						) : null}
 						{source.key === "producthunt" ? (
 							<>
-								<label for={`${source.key}-maxPages`} class="block text-sm font-medium text-gray-700">
+								<label for={`${source.key}-maxPages`} class="block text-sm font-medium text-foreground">
 									Max pages to fetch (1-20)
 								</label>
 								<input
@@ -65,85 +65,84 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 									min="1"
 									max="20"
 									value={input.maxPages ?? 10}
-									class="w-48 rounded-md border border-gray-300 px-3 py-2 text-sm"
+									class="w-48 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
 								/>
 							</>
 						) : null}
 						<button
 							type="submit"
-							class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white"
+							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
 						>
 							Run debug
 						</button>
-					</form>
+							</form>
+						</ScanCard>
+					</Section>
 
 					{result ? (
 						<>
 							{result.fetchError ? (
-								<div class="mt-6 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+								<div class="rounded-md border border-error/25 bg-error/10 p-3 text-sm text-error">
 									<strong>Fetch error:</strong> {result.fetchError}
 								</div>
 							) : (
-								<div class="mt-6 space-y-4">
-									<div class="rounded-md border border-gray-200 bg-gray-50 p-4">
-										<h2 class="text-sm font-semibold text-gray-900">Metadata</h2>
+								<div class="space-y-4">
+									<ScanCard title="Metadata">
 										<div class="mt-3 grid grid-cols-2 gap-4 text-sm">
 											<div>
-												<span class="text-gray-600">Fetched entries:</span>
+												<span class="text-muted-foreground">Fetched entries:</span>
 												<span class="ml-2 font-mono">{result.fetchedEntries}</span>
 											</div>
 											<div>
-												<span class="text-gray-600">Raw domains:</span>
+												<span class="text-muted-foreground">Raw domains:</span>
 												<span class="ml-2 font-mono">{result.rawDomains}</span>
 											</div>
 											<div>
-												<span class="text-gray-600">Normalized domains:</span>
+												<span class="text-muted-foreground">Normalized domains:</span>
 												<span class="ml-2 font-mono">{result.normalizedDomains}</span>
 											</div>
 											<div>
-												<span class="text-gray-600">Skipped domains:</span>
+												<span class="text-muted-foreground">Skipped domains:</span>
 												<span class="ml-2 font-mono">{result.skippedDomains}</span>
 											</div>
 											<div>
-												<span class="text-gray-600">Fetch time:</span>
+												<span class="text-muted-foreground">Fetch time:</span>
 												<span class="ml-2 font-mono">{result.metadata.timing.fetchMs}ms</span>
 											</div>
 											<div>
-												<span class="text-gray-600">Normalize time:</span>
+												<span class="text-muted-foreground">Normalize time:</span>
 												<span class="ml-2 font-mono">{result.metadata.timing.normalizeMs}ms</span>
 											</div>
 											<div>
-												<span class="text-gray-600">Total time:</span>
+												<span class="text-muted-foreground">Total time:</span>
 												<span class="ml-2 font-mono">{result.metadata.timing.totalMs}ms</span>
 											</div>
 										</div>
-									</div>
+									</ScanCard>
 
 									{result.metadata.skips.length > 0 ? (
-										<div class="rounded-md border border-yellow-200 bg-yellow-50 p-4">
-											<h2 class="text-sm font-semibold text-gray-900">Skipped Domains ({result.metadata.skips.length})</h2>
+										<ScanCard title={`Skipped Domains (${result.metadata.skips.length})`} class="border-warning/30 bg-warning/10">
 											<ul class="mt-2 space-y-1 font-mono text-xs">
 												{result.metadata.skips.map((skip, index) => (
-													<li key={`${skip.domain}-${index}`} class="text-yellow-800">
+													<li key={`${skip.domain}-${index}`} class="text-warning">
 														{skip.domain} — {skip.reason}
 													</li>
 												))}
 											</ul>
-										</div>
+										</ScanCard>
 									) : null}
 
-									<div class="rounded-md border border-gray-200 p-4">
-										<h2 class="text-sm font-semibold text-gray-900">Domains ({result.domains.length})</h2>
+									<ScanCard title={`Domains (${result.domains.length})`}>
 										{result.domains.length > 0 ? (
 											<ul class="mt-3 space-y-1 text-sm font-mono">
 												{result.domains.map((domain) => {
 													const qualifyUrl = `/qualify?domain=${encodeURIComponent(domain)}&source=${source.key}`;
 													return (
-														<li key={domain} class="flex items-center justify-between rounded border border-gray-100 px-2 py-1">
+														<li key={domain} class="flex items-center justify-between rounded border border-muted px-2 py-1">
 															<span class="truncate">{domain}</span>
 															<a
 																href={qualifyUrl}
-																class="ml-2 shrink-0 rounded bg-gray-900 px-2 py-0.5 text-xs font-medium text-white"
+																class="ml-2 shrink-0 rounded bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground"
 															>
 																Qualify
 															</a>
@@ -152,18 +151,18 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 												})}
 											</ul>
 										) : (
-											<p class="mt-3 text-sm text-gray-500">No domains found.</p>
+											<p class="mt-3 text-sm text-muted-foreground">No domains found.</p>
 										)}
-									</div>
+									</ScanCard>
 
-									<details class="rounded-md border border-gray-200">
-										<summary class="cursor-pointer px-4 py-3 text-sm font-medium text-gray-900">
+									<details class="rounded-md border border-border bg-card">
+										<summary class="cursor-pointer px-4 py-3 text-sm font-medium text-foreground">
 											Transformation Trace ({result.transformations.length} entries)
 										</summary>
-										<div class="border-t border-gray-200 p-4">
+										<div class="border-t border-muted p-4">
 											<table class="w-full text-sm font-mono">
 												<thead>
-													<tr class="text-left text-gray-600">
+													<tr class="text-left text-muted-foreground">
 														<th class="pb-2">Input</th>
 														<th class="pb-2">Output</th>
 														<th class="pb-2">Status</th>
@@ -172,25 +171,25 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 												</thead>
 												<tbody>
 													{result.transformations.slice(0, 50).map((t, i) => (
-														<tr key={i} class="border-t border-gray-100">
+														<tr key={i} class="border-t border-muted">
 															<td class="py-1 pr-4">{t.input}</td>
 															<td class="py-1 pr-4">{t.output ?? "null"}</td>
 															<td class="py-1 pr-4">
 																<span class={
-																	t.status === "ok" ? "text-green-700" :
-																	t.status === "failed" ? "text-red-700" :
-																	"text-yellow-700"
+																	t.status === "ok" ? "text-success" :
+																	t.status === "failed" ? "text-error" :
+																	"text-warning"
 																}>
 																	{t.status}
 																</span>
 															</td>
-															<td class="py-1 text-gray-600">{t.reason ?? "-"}</td>
+															<td class="py-1 text-muted-foreground">{t.reason ?? "-"}</td>
 														</tr>
 													))}
 												</tbody>
 											</table>
 											{result.transformations.length > 50 ? (
-												<p class="mt-3 text-xs text-gray-500">
+												<p class="mt-3 text-xs text-muted-foreground">
 													Showing first 50 of {result.transformations.length} transformations.
 												</p>
 											) : null}
@@ -198,12 +197,12 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 									</details>
 
 									{result.metadata.sampleRaw && result.metadata.sampleRaw.length > 0 ? (
-										<details class="rounded-md border border-gray-200">
-											<summary class="cursor-pointer px-4 py-3 text-sm font-medium text-gray-900">
+										<details class="rounded-md border border-border bg-card">
+											<summary class="cursor-pointer px-4 py-3 text-sm font-medium text-foreground">
 												Sample Raw Data ({result.metadata.sampleRaw.length} items)
 											</summary>
-											<div class="border-t border-gray-200 p-4">
-												<pre class="overflow-x-auto text-xs font-mono text-gray-700">
+											<div class="border-t border-muted p-4">
+												<pre class="overflow-x-auto text-xs font-mono text-muted-foreground">
 													{JSON.stringify(result.metadata.sampleRaw, null, 2)}
 												</pre>
 											</div>
@@ -213,17 +212,17 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 							)}
 						</>
 					) : (
-						<p class="mt-6 text-sm text-gray-500">
+						<p class="text-sm text-muted-foreground">
 							Run the debug to see domain list and transformation details.
 						</p>
 					)}
 
-					<p class="mt-6 text-sm">
+					<p class="text-sm">
 						<a href="/source" class="underline">
 							Back to sourcing
 						</a>
 					</p>
-				</section>
+				</div>
 			</Layout>
 		);
 	});

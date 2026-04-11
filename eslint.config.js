@@ -23,6 +23,13 @@ export default [
   },
 
   {
+    files: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "custom/no-raw-functions": "off",
+    },
+  },
+
+  {
     ignores: ["dist/", "node_modules/", "eslint/"],
   },
 ];

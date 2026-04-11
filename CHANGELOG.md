@@ -326,3 +326,20 @@ Users can now discover authentication from the homepage, complete the magic-link
 
 **Outcome:**
 The product now provides check-attributed leak detection with stronger data integrity and clearer operator visibility, while creating a stable architecture for adding and iterating detectors independently.
+
+---
+
+## v0.16 — Design System + Unified UI (Step 15)
+
+**Introduced a semantic design system and refactored all pages into a consistent, professional interface**
+
+- Established a tokenized color system with semantic names (background, foreground, muted, card, border, primary, success, warning, error) supporting automatic light/dark mode
+- Built reusable UI primitives following shadcn conventions: StatusBadge, Section, ScanCard, Divider — all with consistent spacing, subtle borders, and restrained status colors
+- Refactored scan result page into three clear sections (Scan Summary, Checks Overview, Detailed Findings) with responsive grid layout and computed duration display
+- Applied the design system uniformly across all pages: home, auth, domains, sourcing, source debug, dedupe, and qualification
+- Standardized status representation with color-coded badges (success=green, failed=red, running=blue, idle=gray) replacing raw text labels
+- Ensured Checks Overview and Detailed Findings only render after scan completion, with unit tests guarding the visibility contract
+- Removed all hardcoded gray/red utility classes in favor of semantic tokens for maintainability and theme consistency
+
+**Outcome:**
+Every page in the product now shares a single design language with proper hierarchy, accessible contrast, and dark mode support — making future UI work deterministic and visually consistent.

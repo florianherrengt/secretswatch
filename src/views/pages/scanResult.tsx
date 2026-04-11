@@ -1,5 +1,8 @@
 import { z } from "zod";
 import type { FC } from "hono/jsx";
+import { ScanCard } from "../components/ScanCard.js";
+import { Section } from "../components/Section.js";
+import { StatusBadge } from "../components/StatusBadge.js";
 import { Layout } from "../layout.js";
 
 export const scanResultItemSchema = z.object({
@@ -25,95 +28,164 @@ export const scanResultPagePropsSchema = z.object({
 
 export type ScanResultPageProps = z.infer<typeof scanResultPagePropsSchema>;
 
+const formatDateTime = z
+	.function()
+	.args(z.string())
+	.returns(z.string())
+	.implement((isoValue) => {
+		const parsedDate = new Date(isoValue);
+
+		if (Number.isNaN(parsedDate.getTime())) {
+			return isoValue;
+		}
+
+		return new Intl.DateTimeFormat("en-US", {
+			year: "numeric",
+			month: "short",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit"
+		}).format(parsedDate);
+	});
+
+const formatDuration = z
+	.function()
+	.args(z.string(), z.string().nullable())
+	.returns(z.string())
+	.implement((startedAtIso, finishedAtIso) => {
+		if (!finishedAtIso) {
+			return "In progress";
+		}
+
+		const startedAtMs = new Date(startedAtIso).getTime();
+		const finishedAtMs = new Date(finishedAtIso).getTime();
+
+		if (Number.isNaN(startedAtMs) || Number.isNaN(finishedAtMs) || finishedAtMs <= startedAtMs) {
+			return "-";
+		}
+
+		const totalSeconds = Math.floor((finishedAtMs - startedAtMs) / 1000);
+		const minutes = Math.floor(totalSeconds / 60);
+		const seconds = totalSeconds % 60;
+
+		if (minutes === 0) {
+			return `${seconds}s`;
+		}
+
+		return `${minutes}m ${seconds}s`;
+	});
+
 export const ScanResultPage: FC<ScanResultPageProps> = z
 	.function()
 	.args(scanResultPagePropsSchema)
 	.returns(z.custom<ReturnType<FC<ScanResultPageProps>>>())
 	.implement((props) => {
 		const isPending = props.status === "pending";
-		const isFailed = props.status === "failed";
-		const isSuccess = props.status === "success";
+		const checksWithFindings = props.checks.filter((check) => check.findings.length > 0);
+		const totalFindings = checksWithFindings.reduce((total, check) => total + check.findings.length, 0);
+		const scanStatus =
+			props.status === "pending" ? "running" : props.status === "failed" ? "failed" : "success";
 
 		return (
 			<Layout title="Scan Result" autoRefreshSeconds={isPending ? 1 : undefined}>
-				<section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-					<h1 class="text-2xl font-semibold tracking-tight">Scan Result</h1>
-					<div class="mt-3 space-y-1 text-sm text-gray-700">
-						<p>
-							<strong>Domain:</strong> {props.domain}
-						</p>
-						<p>
-							<strong>Status:</strong> {props.status}
-						</p>
-						<p>
-							<strong>Started:</strong> {props.startedAtIso}
-						</p>
-						<p>
-							<strong>Finished:</strong> {props.finishedAtIso ?? "-"}
-						</p>
-					</div>
+				<div class="space-y-6">
+					<h1 class="text-xl font-semibold text-foreground">Scan Result</h1>
 
-					{isPending ? (
-						<p class="mt-5 text-sm text-gray-700">Scanning in progress...</p>
-					) : null}
+					<Section title="Scan Summary" description="Core status and timing metadata for this run.">
+						<ScanCard>
+							<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+								<div class="space-y-2">
+									<p class="text-sm font-medium text-foreground">{props.domain}</p>
+									<StatusBadge status={scanStatus} />
+								</div>
+								<div class="space-y-1 text-sm text-muted-foreground sm:text-right">
+									<p>
+										<span class="font-medium text-foreground">Started:</span> {formatDateTime(props.startedAtIso)}
+									</p>
+									<p>
+										<span class="font-medium text-foreground">Finished:</span>{" "}
+										{props.finishedAtIso ? formatDateTime(props.finishedAtIso) : "-"}
+									</p>
+									<p>
+										<span class="font-medium text-foreground">Duration:</span>{" "}
+										{formatDuration(props.startedAtIso, props.finishedAtIso)}
+									</p>
+								</div>
+							</div>
+						</ScanCard>
+					</Section>
 
-					{isFailed ? <p class="mt-5 text-sm text-red-700">Scan failed</p> : null}
-
-					{isSuccess ? (
-						<>
-							<h2 class="mt-5 text-lg font-semibold">Checks</h2>
-							<ul class="mt-2 space-y-3 text-sm">
+					{!isPending ? (
+						<Section title="Checks Overview" description="Quick scanability across all checks.">
+							<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 								{props.checks.map((check) => {
+									const hasFindings = check.findings.length > 0;
+
 									return (
-										<li class="rounded-md border border-gray-200 p-3" key={check.id}>
-											<p>
-												<strong>Check:</strong> {check.name}
-											</p>
-											<p class="mt-1 text-gray-700">
-												<strong>Status:</strong> {check.status}
-											</p>
-											<p class="mt-1 text-gray-700">
-												<strong>Findings:</strong> {check.findings.length}
-											</p>
-										</li>
+										<ScanCard
+											key={check.id}
+											title={check.name}
+											head={<StatusBadge status={check.status === "failed" ? "failed" : "success"} />}
+											class={hasFindings ? "border-error/30 bg-error/5" : undefined}
+										>
+											{hasFindings ? (
+												<p class="text-sm font-medium text-error">{check.findings.length} findings</p>
+											) : (
+												<p class="text-sm text-muted-foreground">No issues found</p>
+											)}
+										</ScanCard>
 									);
 								})}
-							</ul>
+							</div>
+						</Section>
+					) : null}
 
-							<h2 class="mt-6 text-lg font-semibold">Findings by Check</h2>
-							<div class="mt-2 space-y-4 text-sm">
-								{props.checks.map((check) => {
-									return (
-										<section class="rounded-md border border-gray-200 p-3" key={`${check.id}-group`}>
-											<h3 class="font-semibold">{check.name}</h3>
-											{check.findings.length === 0 ? (
-												<p class="mt-1 text-gray-600">No issues found</p>
-											) : (
-												<ul class="mt-2 space-y-3">
+					{!isPending ? (
+						<Section
+							title="Detailed Findings"
+							description={
+								totalFindings > 0
+									? `${checksWithFindings.length} checks with findings`
+									: "No findings reported"
+							}
+						>
+							{checksWithFindings.length === 0 ? (
+								<p class="text-sm text-muted-foreground">No issues found</p>
+							) : (
+								<div class="space-y-3">
+									{checksWithFindings.map((check) => {
+										return (
+											<ScanCard
+												key={`${check.id}-details`}
+												title={check.name}
+												head={
+													<div class="flex items-center gap-2">
+														<StatusBadge status="failed" />
+														<span class="text-sm font-medium text-error">{check.findings.length}</span>
+													</div>
+												}
+											>
+												<ul class="divide-y divide-muted">
 													{check.findings.map((finding) => {
 														return (
 															<li
-																class="rounded-md border border-gray-200 p-3"
+																class="space-y-1 py-3 first:pt-0 last:pb-0"
 																key={`${check.id}-${finding.file}-${finding.snippet}`}
 															>
-																<p>
-																	<strong>File:</strong> {finding.file}
-																</p>
-																<p class="mt-1 break-words">
-																	<strong>Snippet:</strong> {finding.snippet}
-																</p>
+																<p class="text-sm font-medium text-foreground">{finding.file}</p>
+																<p class="break-words text-sm text-muted-foreground">{finding.snippet}</p>
 															</li>
 														);
 													})}
 												</ul>
-											)}
-										</section>
-									);
-								})}
-							</div>
-						</>
+											</ScanCard>
+										);
+									})}
+								</div>
+							)}
+						</Section>
 					) : null}
-				</section>
+				</div>
 			</Layout>
 		);
 	});

@@ -1,5 +1,8 @@
 import { z } from "zod";
 import type { FC } from "hono/jsx";
+import { Divider } from "../components/Divider.js";
+import { ScanCard } from "../components/ScanCard.js";
+import { Section } from "../components/Section.js";
 import { Layout } from "../layout.js";
 
 const demoExamples = [
@@ -24,49 +27,47 @@ export const HomePage: FC<HomePageProps> = z
 	.implement(({ domain, isLoggedIn }) => {
 		return (
 			<Layout title="Home" topNavMode={isLoggedIn ? "app" : "auth"}>
-				<section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-					<h1 class="text-2xl font-semibold tracking-tight">Secret Detector</h1>
-					<p class="mt-2 text-sm text-gray-600">
-						Submit a domain target to enqueue an async scan and persist findings.
-					</p>
-					<p class="mt-2 text-sm text-gray-600">
-						Need end-to-end dedupe diagnostics? Use the <a href="/dedupe" class="underline">dedupe debug tool</a>.
-					</p>
+				<div class="space-y-6">
+					<h1 class="text-xl font-semibold text-foreground">Secret Detector</h1>
+					<Section title="Run Scan" description="Submit a domain target to enqueue an async scan and persist findings.">
+						<ScanCard>
+							<p class="text-sm text-muted-foreground">
+								Need end-to-end dedupe diagnostics? Use the <a href="/dedupe" class="underline">dedupe debug tool</a>.
+							</p>
+							<form action="/scan" method="post" class="space-y-3">
+								<label for="domain" class="block text-sm font-medium text-foreground">
+									Domain target
+								</label>
+								<input
+									id="domain"
+									name="domain"
+									type="text"
+									required
+									placeholder={`${domain}/sandbox/website/examples/pem-key/`}
+									class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+								/>
+								<button
+									type="submit"
+									class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+								>
+									Run scan
+								</button>
+							</form>
+						</ScanCard>
+					</Section>
 
-					<form action="/scan" method="post" class="mt-5 space-y-3">
-						<label for="domain" class="block text-sm font-medium text-gray-700">
-							Domain target
-						</label>
-						<input
-							id="domain"
-							name="domain"
-							type="text"
-							required
-							placeholder={`${domain}/sandbox/website/examples/pem-key/`}
-							class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-						/>
-						<button
-							type="submit"
-							class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white"
-						>
-							Run scan
-						</button>
-					</form>
+					<Divider />
 
-					<div class="mt-8 border-t border-gray-200 pt-6">
-						<h2 class="text-lg font-semibold tracking-tight">Demo examples</h2>
-						<p class="mt-2 text-sm text-gray-600">
-							Open a sandbox website directly, or run it through the scan tool.
-						</p>
-						<ul class="mt-4 space-y-3">
+					<Section title="Demo Examples" description="Open a sandbox website directly, or run it through the scan tool.">
+						<ul class="space-y-3">
 							{demoExamples.map((example) => {
 								const examplePath = `/sandbox/website/examples/${example.slug}/`;
 
 								return (
-									<li class="rounded-md border border-gray-200 p-3" key={example.slug}>
-										<p class="text-sm font-medium text-gray-900">{example.title}</p>
+									<li class="rounded-md border border-border bg-card p-4" key={example.slug}>
+										<p class="text-sm font-medium text-foreground">{example.title}</p>
 										<div class="mt-2 flex gap-3">
-											<a href={examplePath} class="text-sm text-gray-900 underline">
+											<a href={examplePath} class="text-sm text-foreground underline">
 												Open site
 											</a>
 											<form action="/scan" method="post">
@@ -76,7 +77,7 @@ export const HomePage: FC<HomePageProps> = z
 													value=""
 													data-scan-target={example.slug}
 												/>
-												<button type="submit" class="text-sm text-gray-900 underline">
+												<button type="submit" class="text-sm text-foreground underline">
 													Scan with tool
 												</button>
 											</form>
@@ -85,8 +86,8 @@ export const HomePage: FC<HomePageProps> = z
 								);
 							})}
 						</ul>
-					</div>
-				</section>
+					</Section>
+				</div>
 				<script>{`
 const host = window.location.host;
 const inputs = document.querySelectorAll('[data-scan-target]');

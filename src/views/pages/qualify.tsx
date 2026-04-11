@@ -1,5 +1,8 @@
 import { z } from "zod";
 import type { FC } from "hono/jsx";
+import { ScanCard } from "../components/ScanCard.js";
+import { Section } from "../components/Section.js";
+import { StatusBadge } from "../components/StatusBadge.js";
 import { Layout } from "../layout.js";
 
 export const qualifyInputPagePropsSchema = z.object({
@@ -24,39 +27,36 @@ export const QualifyInputPage: FC<QualifyInputPageProps> = z
 	.implement(({ defaultDomain, errorMessage }) => {
 		return (
 			<Layout title="Qualification Debug">
-				<section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-					<h1 class="text-2xl font-semibold tracking-tight">Qualification Debug</h1>
-					<p class="mt-2 text-sm text-gray-600">
-						Run pipeline qualification on a domain and inspect the reason output.
-					</p>
-
-					{errorMessage ? (
-						<p class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-							{errorMessage}
-						</p>
-					) : null}
-
-					<form action="/qualify" method="get" class="mt-5 space-y-3">
-						<label for="domain" class="block text-sm font-medium text-gray-700">
-							Domain target
-						</label>
-						<input
-							id="domain"
-							name="domain"
-							type="text"
-							required
-							value={defaultDomain ?? ""}
-							placeholder="example.com"
-							class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-						/>
-						<button
-							type="submit"
-							class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white"
-						>
-							Run qualification
-						</button>
-					</form>
-				</section>
+				<div class="space-y-6">
+					<h1 class="text-xl font-semibold text-foreground">Qualification Debug</h1>
+					<Section title="Run Qualification" description="Run pipeline qualification on a domain and inspect the reason output.">
+						<ScanCard>
+							{errorMessage ? (
+								<p class="rounded-md border border-error/25 bg-error/10 px-3 py-2 text-sm text-error">{errorMessage}</p>
+							) : null}
+							<form action="/qualify" method="get" class="space-y-3">
+								<label for="domain" class="block text-sm font-medium text-foreground">
+									Domain target
+								</label>
+								<input
+									id="domain"
+									name="domain"
+									type="text"
+									required
+									value={defaultDomain ?? ""}
+									placeholder="example.com"
+									class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+								/>
+								<button
+									type="submit"
+									class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+								>
+									Run qualification
+								</button>
+							</form>
+						</ScanCard>
+					</Section>
+				</div>
 			</Layout>
 		);
 	});
@@ -68,30 +68,27 @@ export const QualifyResultPage: FC<QualifyResultPageProps> = z
 	.implement(({ domain, isQualified, reasons }) => {
 		return (
 			<Layout title="Qualification Result">
-				<section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-					<h1 class="text-2xl font-semibold tracking-tight">Qualification Result</h1>
-					<div class="mt-3 space-y-1 text-sm text-gray-700">
-						<p>
-							<strong>Domain:</strong> {domain}
-						</p>
-						<p>
-							<strong>Result:</strong> {isQualified ? "QUALIFIED" : "NOT QUALIFIED"}
-						</p>
-					</div>
-
-					<h2 class="mt-5 text-lg font-semibold">Reasons</h2>
-					<ul class="mt-2 list-disc space-y-1 pl-6 text-sm text-gray-700">
-						{reasons.map((reason) => {
-							return <li key={reason}>{reason}</li>;
-						})}
-					</ul>
-
-					<p class="mt-5 text-sm">
-						<a href="/qualify" class="underline">
-							Run another check
-						</a>
-					</p>
-				</section>
+				<div class="space-y-6">
+					<h1 class="text-xl font-semibold text-foreground">Qualification Result</h1>
+					<Section title="Outcome">
+						<ScanCard>
+							<div class="flex items-center gap-3">
+								<p class="text-sm font-medium text-foreground">{domain}</p>
+								<StatusBadge status={isQualified ? "success" : "failed"} label={isQualified ? "qualified" : "not qualified"} />
+							</div>
+						</ScanCard>
+					</Section>
+					<Section title="Reasons">
+						<ScanCard>
+							<ul class="list-disc space-y-1 pl-6 text-sm text-muted-foreground">
+								{reasons.map((reason) => {
+									return <li key={reason}>{reason}</li>;
+								})}
+							</ul>
+						</ScanCard>
+					</Section>
+					<p class="text-sm"><a href="/qualify" class="underline">Run another check</a></p>
+				</div>
 			</Layout>
 		);
 	});
