@@ -343,3 +343,16 @@ The product now provides check-attributed leak detection with stronger data inte
 
 **Outcome:**
 Every page in the product now shares a single design language with proper hierarchy, accessible contrast, and dark mode support — making future UI work deterministic and visually consistent.
+
+---
+
+## v0.17 — CI Pipeline (Step 16)
+
+**Added automated validation that runs lint and tests on every push and pull request**
+
+- Introduced a single GitHub Actions workflow triggered on all push and pull request events
+- Runs ESLint and Vitest sequentially on Node.js 20 with deterministic dependency installation via `npm ci`
+- Fails immediately on lint or test errors, preventing regressions from reaching the main branch
+
+**Outcome:**
+Every code change is now automatically verified in a clean environment, establishing a reliable quality gate before merge.
