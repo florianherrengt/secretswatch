@@ -152,6 +152,7 @@ export const designSystemPolicy = {
     "space-y-4",
     "space-y-6",
     "text-error",
+    "text-error-foreground",
     "text-foreground",
     "text-left",
     "text-lg",

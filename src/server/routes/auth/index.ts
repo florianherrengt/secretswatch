@@ -106,6 +106,19 @@ app.post(
         await logout(sessionId);
       }
 
+      const contentType = c.req.header("content-type") ?? "";
+      const isFormSubmit = !contentType.includes("application/json");
+
+      if (isFormSubmit) {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            "Location": "/",
+            "Set-Cookie": "session_id=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"
+          }
+        });
+      }
+
       return c.json({ success: true }, {
         headers: {
           "Set-Cookie": "session_id=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"

@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { builtinChecks, checkResultSchema, checkScriptSchema, type ScanCheck } from "./checks.js";
+import {
+	builtinChecks,
+	checkResultSchema,
+	checkScriptSchema,
+	sourceMapProbeSchema,
+	sourceMapDiscoveryMethodSchema,
+	type ScanCheck,
+	type SourceMapProbe,
+	type SourceMapDiscoveryMethod
+} from "./checks.js";
 
 export const ScanDomainInput = z.object({
 	domain: z.string()
@@ -27,6 +36,8 @@ const SCRIPT_TIMEOUT_MS = 3_000;
 const HOMEPAGE_MAX_BYTES = 200 * 1024;
 const SCRIPT_MAX_BYTES = 50 * 1024;
 const MAX_SCRIPT_CANDIDATES = 3;
+const SOURCE_MAP_TIMEOUT_MS = 3_000;
+const SOURCE_MAP_MAX_BYTES = 100 * 1024;
 
 const isValidHostname = z
 	.function()
@@ -203,7 +214,8 @@ const fetchTextResource = z
 			z
 				.object({
 					contentType: z.string(),
-					body: z.string()
+					body: z.string(),
+					headers: z.record(z.string())
 				})
 				.nullable()
 		)
@@ -231,10 +243,16 @@ const fetchTextResource = z
 		}
 
 		const contentType = response.headers.get("content-type") ?? "";
+		const responseHeaders: Record<string, string> = {};
+
+		response.headers.forEach((value, key) => {
+			responseHeaders[key] = value;
+		});
 
 		return {
 			contentType,
-			body
+			body,
+			headers: responseHeaders
 		};
 	});
 
@@ -337,6 +355,200 @@ const isLikelyJavaScript = z
 		return false;
 	});
 
+const extractSourceMapRefFromHeaders = z
+	.function()
+	.args(z.record(z.string()))
+	.returns(
+		z
+			.object({
+				url: z.string(),
+				method: sourceMapDiscoveryMethodSchema
+			})
+			.nullable()
+	)
+	.implement((headers) => {
+		const sourcemapHeader = headers["sourcemap"] ?? headers["sourcemap"];
+
+		if (typeof sourcemapHeader === "string" && sourcemapHeader.length > 0) {
+			return { url: sourcemapHeader, method: "sourcemap-header" as const };
+		}
+
+		const xSourcemapHeader = headers["x-sourcemap"] ?? headers["x-sourcemap"];
+
+		if (typeof xSourcemapHeader === "string" && xSourcemapHeader.length > 0) {
+			return { url: xSourcemapHeader, method: "x-sourcemap-header" as const };
+		}
+
+		return null;
+	});
+
+const extractSourceMapRefFromBody = z
+	.function()
+	.args(z.string())
+	.returns(
+		z
+			.object({
+				url: z.string(),
+				method: sourceMapDiscoveryMethodSchema
+			})
+			.nullable()
+	)
+	.implement((body) => {
+		const lines = body.split("\n");
+		let lastMatch: { url: string; method: SourceMapDiscoveryMethod } | null = null; // eslint-disable-line custom/no-mutable-variables
+
+		for (const line of lines) {
+			const standardMatch = line.match(/\/\/# sourceMappingURL=(\S+)/);
+
+			if (standardMatch?.[1]) {
+				lastMatch = { url: standardMatch[1], method: "inline-comment" as const };
+				continue;
+			}
+
+			const legacyMatch = line.match(/\/\/@ sourceMappingURL=(\S+)/);
+
+			if (legacyMatch?.[1]) {
+				lastMatch = { url: legacyMatch[1], method: "legacy-inline-comment" as const };
+			}
+		}
+
+		return lastMatch;
+	});
+
+type SourceMapRef = {
+	url: string;
+	method: SourceMapDiscoveryMethod;
+	scriptUrl: string;
+};
+
+const resolveSourceMapUrl = z
+	.function()
+	.args(z.string().url(), z.string())
+	.returns(z.string().url().nullable())
+	.implement((scriptUrl, rawMapUrl) => {
+		if (rawMapUrl.toLowerCase().startsWith("data:")) {
+			return null;
+		}
+
+		try {
+			const resolved = new URL(rawMapUrl, scriptUrl);
+
+			if (resolved.protocol !== "http:" && resolved.protocol !== "https:") {
+				return null;
+			}
+
+			const scriptOrigin = new URL(scriptUrl).origin;
+
+			if (resolved.origin !== scriptOrigin) {
+				return null;
+			}
+
+			return resolved.toString() as `${string}://${string}`;
+		} catch {
+			return null;
+		}
+	});
+
+const extractSourceMapRefs = z
+	.function()
+	.args(
+		z.string().url(),
+		z.record(z.string()),
+		z.string()
+	)
+	.returns(z.array(z.custom<SourceMapRef>()))
+	.implement((scriptUrl, headers, body) => {
+		const headerRef = extractSourceMapRefFromHeaders(headers);
+
+		if (headerRef) {
+			const resolved = resolveSourceMapUrl(scriptUrl, headerRef.url);
+
+			if (resolved) {
+				return [{ url: resolved, method: headerRef.method, scriptUrl }];
+			}
+		}
+
+		const bodyRef = extractSourceMapRefFromBody(body);
+
+		if (bodyRef) {
+			const resolved = resolveSourceMapUrl(scriptUrl, bodyRef.url);
+
+			if (resolved) {
+				return [{ url: resolved, method: bodyRef.method, scriptUrl }];
+			}
+		}
+
+		return [];
+	});
+
+const parseHasSourcesContent = z
+	.function()
+	.args(z.string())
+	.returns(z.boolean().nullable())
+	.implement((rawBody) => {
+		try {
+			const parsed = JSON.parse(rawBody);
+
+			if (
+				typeof parsed === "object" &&
+				parsed !== null &&
+				Array.isArray(parsed.sourcesContent)
+			) {
+				return parsed.sourcesContent.some(
+					(entry: unknown) => entry !== null && entry !== undefined
+				);
+			}
+
+			return false;
+		} catch {
+			return null;
+		}
+	});
+
+const probeSourceMap = z
+	.function()
+	.args(z.custom<SourceMapRef>())
+	.returns(z.promise(z.custom<SourceMapProbe>()))
+	.implement(async (ref) => {
+		const response = await fetch(ref.url, {
+			method: "GET",
+			signal: AbortSignal.timeout(SOURCE_MAP_TIMEOUT_MS),
+			redirect: "follow"
+		}).catch(() => null);
+
+		if (!response) {
+			return {
+				scriptUrl: ref.scriptUrl,
+				mapUrl: ref.url,
+				discoveryMethod: ref.method,
+				isAccessible: false,
+				httpStatus: null,
+				hasSourcesContent: null
+			};
+		}
+
+		const isAccessible = response.ok || response.status === 206;
+		const httpStatus = response.status;
+		let hasSourcesContent: boolean | null = null; // eslint-disable-line custom/no-mutable-variables
+
+		if (isAccessible) {
+			const body = await readResponseTextWithLimit(response, SOURCE_MAP_MAX_BYTES);
+
+			if (body !== null) {
+				hasSourcesContent = parseHasSourcesContent(body);
+			}
+		}
+
+		return {
+			scriptUrl: ref.scriptUrl,
+			mapUrl: ref.url,
+			discoveryMethod: ref.method,
+			isAccessible,
+			httpStatus,
+			hasSourcesContent
+		};
+	});
+
 const toFailedResult = z
 	.function()
 	.args()
@@ -351,14 +563,19 @@ const toFailedResult = z
 
 export const runChecks = z
 	.function()
-	.args(z.string().url(), z.array(checkScriptSchema), z.array(z.custom<ScanCheck>()))
+	.args(
+		z.string().url(),
+		z.array(checkScriptSchema),
+		z.array(z.custom<ScanCheck>()),
+		z.array(sourceMapProbeSchema).optional()
+	)
 	.returns(z.array(checkResultSchema))
-	.implement((domain, scripts, checks) => {
+	.implement((domain, scripts, checks, sourceMaps) => {
 		const results: z.infer<typeof checkResultSchema>[] = [];
 
 		for (const check of checks) {
 			try {
-				const checkResult = check.run({ domain, scripts });
+				const checkResult = check.run({ domain, scripts, sourceMaps: sourceMaps ?? [] });
 
 				results.push({
 					id: check.id,
@@ -419,7 +636,7 @@ export const scanDomain = z
 
 		const scriptUrls = extractScriptUrls(homepage.body, targetUrl);
 		const candidateScriptUrls = scriptUrls.slice(0, MAX_SCRIPT_CANDIDATES);
-		const scripts: { file: string; content: string }[] = [];
+		const scripts: { file: string; content: string; headers: Record<string, string> }[] = [];
 
 		for (const scriptUrl of candidateScriptUrls) {
 			const scriptResponse = await fetchTextResource(scriptUrl, SCRIPT_TIMEOUT_MS, SCRIPT_MAX_BYTES, {
@@ -436,11 +653,41 @@ export const scanDomain = z
 
 			scripts.push({
 				file: scriptUrl,
-				content: scriptResponse.body
+				content: scriptResponse.body,
+				headers: scriptResponse.headers
 			});
 		}
 
-		const checks = runChecks(targetUrl, scripts, builtinChecks);
+		const allSourceMapRefs: SourceMapRef[] = [];
+
+		for (const script of scripts) {
+			const refs = extractSourceMapRefs(script.file, script.headers, script.content);
+			allSourceMapRefs.push(...refs);
+		}
+
+		const seenMapUrls = new Set<string>();
+		const uniqueRefs = allSourceMapRefs.filter((ref) => {
+			if (seenMapUrls.has(ref.url)) {
+				return false;
+			}
+
+			seenMapUrls.add(ref.url);
+			return true;
+		});
+
+		const sourceMapProbes: SourceMapProbe[] = [];
+
+		for (const ref of uniqueRefs) {
+			const probe = await probeSourceMap(ref);
+			sourceMapProbes.push(probe);
+		}
+
+		const checks = runChecks(
+			targetUrl,
+			scripts.map(({ file, content }) => ({ file, content })),
+			builtinChecks,
+			sourceMapProbes
+		);
 
 		const findings = checks.flatMap((checkResult) => {
 			return checkResult.findings.map((finding) => {

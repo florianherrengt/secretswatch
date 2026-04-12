@@ -17,7 +17,9 @@ const testScenarioSchema = z.enum([
 	"weak-context",
 	"env-var-key",
 	"env-var-key-clean",
-	"localstorage-jwt"
+	"localstorage-jwt",
+	"public-source-map",
+	"public-source-map-clean"
 ]);
 
 type TestScenario = z.infer<typeof testScenarioSchema>;
@@ -87,6 +89,17 @@ const scenarioCopy: Record<TestScenario, { title: string; issue: string; findHin
 		title: "JWT token stored in localStorage",
 		issue: "A JWT token is written to localStorage, exposing it to XSS theft.",
 		findHint: "Inspect /assets/main.js and look for localStorage.setItem with a token key."
+	},
+	"public-source-map": {
+		title: "Public source map exposure",
+		issue: "A JavaScript bundle references an accessible .map source map file.",
+		findHint:
+			"Inspect /assets/main.js for a //# sourceMappingURL comment and verify main.js.map is accessible."
+	},
+	"public-source-map-clean": {
+		title: "No source map reference (clean)",
+		issue: "A JavaScript bundle with no source map reference — should produce no findings.",
+		findHint: "Inspect /assets/main.js and confirm no sourceMappingURL comment exists."
 	}
 };
 
@@ -144,6 +157,21 @@ const scenarioAssets: Record<TestScenario, Record<string, string>> = {
 	"localstorage-jwt": {
 		"main.js":
 			'localStorage.setItem("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50Ijoic2VjcmV0LWRldGVjdG9yIiwiZXhwIjo0MTAyNDQ0ODAwfQ.5Vf2Idz6bVXwAxf6w7wJiv-LQvVv9dQ9Qz2nUtsL0hE");'
+	},
+	"public-source-map": {
+		"main.js": [
+			'console.log("hello world");',
+			"//# sourceMappingURL=main.js.map"
+		].join("\n"),
+		"main.js.map": JSON.stringify({
+			version: 3,
+			sources: ["../src/index.ts"],
+			sourcesContent: ['console.log("hello world");\n'],
+			mappings: "AAAA"
+		})
+	},
+	"public-source-map-clean": {
+		"main.js": 'console.log("hello world");'
 	}
 };
 
@@ -369,8 +397,12 @@ sandboxWebsiteRoutes.get(
 				return c.text("Not found", 404);
 			}
 
+			const contentType = parsed.data.asset.endsWith(".map")
+				? "application/json; charset=utf-8"
+				: "application/javascript; charset=utf-8";
+
 			return c.body(content, 200, {
-				"content-type": "application/javascript; charset=utf-8",
+				"content-type": contentType,
 				"cache-control": "no-store"
 			});
 		})

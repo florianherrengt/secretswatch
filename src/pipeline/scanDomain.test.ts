@@ -235,7 +235,7 @@ describe("scanDomain local fixtures", () => {
 			}
 		];
 
-		const result = runChecks("https://example.com/", [], checks);
+		const result = runChecks("https://example.com/", [], checks, []);
 
 		expect(result).toHaveLength(2);
 		expect(result[0]?.id).toBe("throwing-check");
@@ -269,6 +269,33 @@ describe("scanDomain local fixtures", () => {
 		expect(result.findings[0]?.file).toContain("/sandbox/website/examples/localstorage-jwt/assets/main.js");
 		expect(result.findings[0]?.snippet).toContain("[REDACTED]");
 		expect(result.findings[0]?.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+	});
+
+	it("detects public source map exposure", async () => {
+		const result = await scanDomain({
+			domain: `localhost:${TEST_PORT}/sandbox/website/examples/public-source-map/`
+		});
+
+		expect(result.status).toBe("success");
+		expect(countFindingsForCheck({ checks: result.checks, checkId: "public-source-map" })).toBe(1);
+		expect(result.findings.length).toBeGreaterThanOrEqual(1);
+
+		const sourceMapFinding = result.findings.find((f) => f.checkId === "public-source-map");
+
+		expect(sourceMapFinding).toBeDefined();
+		expect(sourceMapFinding!.file).toContain("main.js.map");
+		expect(sourceMapFinding!.snippet).toContain("Public source map exposed");
+		expect(sourceMapFinding!.snippet).toContain("inline-comment");
+		expect(sourceMapFinding!.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+	});
+
+	it("returns no public-source-map findings for clean fixture", async () => {
+		const result = await scanDomain({
+			domain: `localhost:${TEST_PORT}/sandbox/website/examples/public-source-map-clean/`
+		});
+
+		expect(result.status).toBe("success");
+		expect(countFindingsForCheck({ checks: result.checks, checkId: "public-source-map" })).toBe(0);
 	});
 
 });

@@ -109,6 +109,15 @@ describe("POST /domains/:domainId/delete", () => {
 	});
 });
 
+describe("GET /settings", () => {
+	it("returns 401 when not authenticated", async () => {
+		const res = await app.request("/settings");
+		expect(res.status).toBe(401);
+		const body = await res.json();
+		expect(body).toHaveProperty("error");
+	});
+});
+
 describe("POST /qualify", () => {
 	it("returns validation error when input is invalid", async () => {
 		const res = await app.request("/qualify", {

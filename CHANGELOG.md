@@ -520,3 +520,26 @@ Top navigation behavior is now centralized, deterministic, and reusable across p
 - Updated `POST /auth/logout` to redirect form submissions to `/` (previously returned JSON only)
 - Added `text-error-foreground` to design-system policy approved tokens
 - Added unit test for unauthenticated access and e2e tests covering the full sign-out flow (visit settings, click sign out, redirected to home, session destroyed)
+
+---
+
+## v0.28 — Public Source Map Exposure Detection
+
+**Added a built-in scan check that detects publicly accessible `.map` source map files linked from production JavaScript bundles**
+
+- Defined `sourceMapProbeSchema` and `sourceMapDiscoveryMethodSchema` in check contracts for structured source map probe results
+- Extended `checkRunInputSchema` with optional `sourceMaps` array (defaults to empty) passed to all checks
+- Created `public-source-map` check module (`metadata`, `detector`, `run`, `index`) following existing check conventions
+- Discovery methods supported in precedence order: `SourceMap` header → `X-SourceMap` header → `//# sourceMappingURL=` inline → `//@ sourceMappingURL=` legacy inline
+- Only same-origin map URLs are probed; cross-origin and `data:` URLs are rejected
+- Map probe: GET with bounded timeout/bytes, accessible on any 2xx (including 206)
+- Fingerprint: deterministic SHA-256 of map URL only
+- `hasSourcesContent`: reports `true` if JSON has `sourcesContent` with ≥1 non-null entry, `false` if JSON parses but no content, `null` on parse failure
+- Extended `fetchTextResource` in `scanDomain.ts` to return response headers alongside body and content type
+- Added source map extraction, resolution, and probing pipeline to `scanDomain` flow
+- Registered check in `builtinChecks` array and added to scan result classification config
+- Added sandbox scenarios (`public-source-map` with inline `sourceMappingURL` + `.map` asset, `public-source-map-clean` with no reference)
+- Added integration tests for both positive and negative cases
+
+**Outcome:**
+Scans now detect publicly accessible source map files that expose original source code, variable names, and file paths from production JavaScript bundles.

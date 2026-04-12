@@ -12,9 +12,26 @@ export const checkScriptSchema = z.object({
 	content: z.string()
 });
 
+export const sourceMapDiscoveryMethodSchema = z.enum([
+	"sourcemap-header",
+	"x-sourcemap-header",
+	"inline-comment",
+	"legacy-inline-comment"
+]);
+
+export const sourceMapProbeSchema = z.object({
+	scriptUrl: z.string().url(),
+	mapUrl: z.string().url(),
+	discoveryMethod: sourceMapDiscoveryMethodSchema,
+	isAccessible: z.boolean(),
+	httpStatus: z.number().int().nullable(),
+	hasSourcesContent: z.boolean().nullable()
+});
+
 export const checkRunInputSchema = z.object({
 	domain: z.string().url(),
-	scripts: z.array(checkScriptSchema)
+	scripts: z.array(checkScriptSchema),
+	sourceMaps: z.array(sourceMapProbeSchema).optional().default([])
 });
 
 export const checkRunOutputSchema = z.object({
@@ -32,6 +49,8 @@ export const checkResultSchema = checkDefinitionSchema.extend({
 });
 
 export type CheckFinding = z.infer<typeof checkFindingSchema>;
+export type SourceMapDiscoveryMethod = z.infer<typeof sourceMapDiscoveryMethodSchema>;
+export type SourceMapProbe = z.infer<typeof sourceMapProbeSchema>;
 export type CheckRunInput = z.infer<typeof checkRunInputSchema>;
 export type CheckRunOutput = z.infer<typeof checkRunOutputSchema>;
 export type CheckDefinition = z.infer<typeof checkDefinitionSchema>;

@@ -5,6 +5,7 @@ import { credentialUrlCheck } from "./checks/credential-url/index.js";
 import { genericSecretCheck } from "./checks/generic-secret/index.js";
 import { envVarKeyCheck } from "./checks/env-var-key/index.js";
 import { localStorageJwtCheck } from "./checks/localstorage-jwt/index.js";
+import { publicSourceMapCheck } from "./checks/public-source-map/index.js";
 
 export const builtinChecks: ScanCheck[] = [
 	pemKeyCheck,
@@ -12,5 +13,6 @@ export const builtinChecks: ScanCheck[] = [
 	credentialUrlCheck,
 	genericSecretCheck,
 	envVarKeyCheck,
-	localStorageJwtCheck
+	localStorageJwtCheck,
+	publicSourceMapCheck
 ];

@@ -3,7 +3,8 @@ export const checkClassificationById = {
 	"jwt-token": "Token Exposure",
 	"credential-url": "Credential URL Exposure",
 	"generic-secret": "Generic Secret Exposure",
-	"localstorage-jwt": "Token Storage Exposure"
+	"localstorage-jwt": "Token Storage Exposure",
+	"public-source-map": "Source Map Exposure"
 } as const;
 
 export const classificationFallback = "General Security";
