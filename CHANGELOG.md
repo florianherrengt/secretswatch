@@ -611,3 +611,18 @@ All scan creation paths (manual, scheduled, source pipeline) now go through a si
 
 **Outcome:**
 The queue monitor now reliably loads at `/admin/queues`, restoring expected admin observability for BullMQ jobs.
+
+---
+
+## v0.32 — Admin Basic Auth Hardening
+
+**Locked down admin tooling behind dedicated HTTP Basic Auth and added a protected admin landing page.**
+
+- Added `requireBasicAuth` middleware for admin routes, with explicit `WWW-Authenticate` challenge responses
+- Introduced `ADMIN_BASIC_AUTH_USERNAME` and `ADMIN_BASIC_AUTH_PASSWORD` environment variables (documented in `.env.example`)
+- Mounted admin routes at `/admin` and nested Bull Board under `/admin/queues` behind the same protection boundary
+- Added an `/admin` landing page that links to Queue Monitor tooling
+- Expanded end-to-end coverage for unauthorized, invalid-credential, and valid-credential access across both `/admin` and `/admin/queues`
+
+**Outcome:**
+Admin operational surfaces are now isolated from user-session auth and require explicit admin credentials, reducing accidental exposure risk.

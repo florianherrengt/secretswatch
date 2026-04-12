@@ -7,7 +7,7 @@ import scanRoutes from "./scan/index.js";
 import qualifyRoutes from "./qualify/index.js";
 import dedupeRoutes from "./dedupe/index.js";
 import sourceRoutes from "./source/index.js";
-import adminQueueRoutes from "./admin/queues/index.js";
+import adminRoutes from "./admin/index.js";
 import debugRoutes from "./debug/index.js";
 import domainRoutes from "./domains/index.js";
 import settingsRoutes from "./settings/index.js";
@@ -24,7 +24,7 @@ app.route("/scan", scanRoutes);
 app.route("/qualify", qualifyRoutes);
 app.route("/dedupe", dedupeRoutes);
 app.route("/source", sourceRoutes);
-app.route("/admin/queues", adminQueueRoutes);
+app.route("/admin", adminRoutes);
 
 if (process.env.NODE_ENV !== "production") {
 	app.route("/debug", debugRoutes);
