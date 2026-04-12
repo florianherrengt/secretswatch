@@ -4,7 +4,7 @@ Here is a clean, product-focused changelog covering Steps 1 → 4.
 
 # CHANGELOG
 
-## v0.1 — Foundation (Step 1)
+## v0.1 — Foundation
 
 **Introduced core data model and persistence layer**
 
@@ -27,7 +27,7 @@ System can persist scan results in a structured, type-safe way.
 
 ---
 
-## v0.2 — Scan Pipeline (Step 2)
+## v0.2 — Scan Pipeline
 
 **Implemented core scanning capability for a single domain**
 
@@ -51,7 +51,7 @@ System can detect real credential leaks from a single domain with high precision
 
 ---
 
-## v0.3 — Scenarios Environment (Step 2.5)
+## v0.3 — Scenarios Environment
 
 **Added deterministic local environment for testing and debugging**
 
@@ -71,7 +71,7 @@ Reliable, reproducible environment for validating detection and debugging the pi
 
 ---
 
-## v0.4 — Product Loop (Step 3)
+## v0.4 — Product Loop
 
 **Connected pipeline, database, and UI into a working application**
 
@@ -99,7 +99,7 @@ End-to-end product loop is functional. Users can scan a domain and view results.
 
 ---
 
-## v0.5 — Domain Qualification (Step 4)
+## v0.5 — Domain Qualification
 
 **Introduced pre-scan filtering logic for pipeline use**
 
@@ -128,7 +128,7 @@ System can filter out low-quality domains before scanning, preparing for scalabl
 
 ---
 
-## v0.6 — Detection Hardening (Step 5)
+## v0.6 — Detection Hardening
 
 **Expanded leak detection coverage while preserving precision**
 
@@ -157,7 +157,7 @@ System detects more real frontend leaks while maintaining high-confidence, low-n
 
 ---
 
-## v0.7 — Deduplication Foundation (Step 6)
+## v0.7 — Deduplication Foundation
 
 **Made scan storage idempotent so repeated scans only add genuinely new signals**
 
@@ -172,7 +172,7 @@ System now maintains a clean, non-duplicative finding history that is suitable f
 
 ---
 
-## v0.8 — Async Scan Queue + Visibility (Step 7)
+## v0.8 — Async Scan Queue + Visibility
 
 **Moved scan execution into an asynchronous queue with first-class operational visibility**
 
@@ -189,7 +189,7 @@ The product is now non-blocking, observable, and operationally debuggable, makin
 
 ---
 
-## v0.9 — Domain Sourcing (Step 8)
+## v0.9 — Domain Sourcing
 
 **Added inspectable domain ingestion pipeline with pluggable source registry**
 
@@ -206,7 +206,7 @@ The system can now discover and ingest domains from external sources, filter the
 
 ---
 
-## v0.10 — Source Expansion + Debug Console (Step 9)
+## v0.10 — Source Expansion + Debug Console
 
 **Expanded domain ingestion beyond CT logs and added a dedicated source-level debugging workflow**
 
@@ -222,7 +222,7 @@ The product now supports multi-source ingestion with a first-class debug surface
 
 ---
 
-## v0.11 — Passwordless Auth + Inspectable Email (Step 10)
+## v0.11 — Passwordless Auth + Inspectable Email
 
 **Added magic link authentication with a fully debuggable email layer**
 
@@ -258,7 +258,7 @@ The system now has production-ready passwordless auth that is fully testable loc
 
 ---
 
-## v0.12 — User Domains + Production Hardening (Step 11)
+## v0.12 — User Domains + Production Hardening
 
 **Introduced personal domain tracking and hardened the scan surface for production use**
 
@@ -282,7 +282,7 @@ Users can now build a personal watchlist of domains they care about, and the sca
 
 ---
 
-## v0.13 — Distributed Scan Guardrails (Step 12)
+## v0.13 — Distributed Scan Guardrails
 
 **Hardened scan ingestion for multi-instance operation with stronger data integrity under concurrency**
 
@@ -297,7 +297,7 @@ The product can now enforce scan guardrails and domain uniqueness reliably in di
 
 ---
 
-## v0.14 — Auth Entry Experience (Step 13)
+## v0.14 — Auth Entry Experience
 
 **Turned authentication into a complete, user-facing entry flow from homepage to workspace**
 
@@ -313,7 +313,7 @@ Users can now discover authentication from the homepage, complete the magic-link
 
 ---
 
-## v0.15 — Check-Centric Detection + Explainable Results (Step 14)
+## v0.15 — Check-Centric Detection + Explainable Results
 
 **Re-architected scanning around explicit checks so detections are modular, attributable, and easier to evolve over time**
 
@@ -329,7 +329,7 @@ The product now provides check-attributed leak detection with stronger data inte
 
 ---
 
-## v0.16 — Design System + Unified UI (Step 15)
+## v0.16 — Design System + Unified UI
 
 **Introduced a semantic design system and refactored all pages into a consistent, professional interface**
 
@@ -346,7 +346,7 @@ Every page in the product now shares a single design language with proper hierar
 
 ---
 
-## v0.17 — CI Pipeline (Step 16)
+## v0.17 — CI Pipeline
 
 **Added automated validation that runs lint and tests on every push and pull request**
 
@@ -359,7 +359,7 @@ Every code change is now automatically verified in a clean environment, establis
 
 ---
 
-## v0.18 — Design System Enforcement + Deterministic Demo Actions (Step 17)
+## v0.18 — Design System Enforcement + Deterministic Demo Actions
 
 **Locked frontend consistency into CI and removed client-side fragility from demo scan actions**
 
@@ -375,7 +375,7 @@ Frontend consistency is now continuously enforced by automation, and demo scan f
 
 ---
 
-## v0.19 — Productized Scan Investigation Flow (Step 18)
+## v0.19 — Productized Scan Investigation Flow
 
 **Evolved scan results from a debug-oriented output into a structured investigation surface with deterministic severity and triage signals**
 
@@ -391,7 +391,7 @@ Security scan output now supports reliable triage and repeatable investigation i
 
 ---
 
-## v0.20 — Scan Fidelity Fix + Modular Checks (Step 19)
+## v0.20 — Scan Fidelity Fix + Modular Checks
 
 **Fixed silent finding suppression on repeat scans and modularized the detection layer**
 
@@ -405,7 +405,7 @@ Every scan now reliably surfaces its findings regardless of prior scan history, 
 
 ---
 
-## v0.21 — Pending Scan Result Experience (Step 20)
+## v0.21 — Pending Scan Result Experience
 
 **Turned in-flight scans into a dedicated live state so operators can monitor progress without interim noise**
 
@@ -419,7 +419,7 @@ Users can now open scan results immediately after submission, watch progress cle
 
 ---
 
-## v0.22 — Environment Variable Key Leak Detection (Step 21)
+## v0.22 — Environment Variable Key Leak Detection
 
 **Added a new detection check for known sensitive environment variable key names inlined into client-side bundles**
 
@@ -435,7 +435,7 @@ The scanner now catches an additional class of frontend misconfiguration — bui
 
 ---
 
-## v0.23 — LocalStorage JWT/Token Storage Detection (Step 22)
+## v0.23 — LocalStorage JWT/Token Storage Detection
 
 **Added a new detection check for tokens and JWTs written to localStorage in client-side JavaScript**
 
@@ -453,3 +453,23 @@ The scanner now catches an additional class of frontend misconfiguration — bui
 
 **Outcome:**
 The scanner now detects insecure token storage patterns in localStorage — a common OWASP-documented vulnerability — complementing existing value-based and key-based detection.
+
+---
+
+## v0.24 — Deterministic Scan Result UX Refresh
+
+**Redesigned `/scan/:id` into a clearer, contract-driven investigation flow with explicit loading, failure, and empty states**
+
+- Refactored scan result layout into deterministic page structure: `PageHeader` + sectioned content (`Scan Status`, `Scan Overview`, `Findings`, `Passed Checks`)
+- Introduced reusable UI primitives for consistent composition:
+  - `PageHeader`
+  - `EmptyStateCard`
+  - `SkeletonList`
+- Added pending-state skeleton rendering (`SkeletonList`) so in-flight scans show structured loading content instead of status text alone
+- Added explicit failed-scan recovery UI with actionable retry messaging and preserved `Re-run Scan` as the single dominant CTA
+- Improved findings readability with clearer check grouping, severity badges, metadata labeling, and snippet overflow handling
+- Updated design-system enforcement policy to allow the new primitives and kept all styling inside approved semantic tokens/classes
+- Expanded `scanResult` page tests to lock the new hierarchy and state contracts (header/status sections, pending skeletons, failed recovery state)
+
+**Outcome:**
+Scan results now present a stable, high-signal triage surface with stronger UX determinism and fully covered state behavior across pending, failed, and completed runs.

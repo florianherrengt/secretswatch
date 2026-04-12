@@ -51,13 +51,12 @@ const renderPage = (overrides: Partial<ScanResultPageProps> = {}): string => {
 };
 
 describe("ScanResultPage deterministic contracts", () => {
-	it("renders breadcrumb and global status banner", () => {
+	it("renders page header and global status section", () => {
 		const html = renderPage();
 
-		expect(html).toContain("Home");
-		expect(html).toContain("Scans");
-		expect(html).toContain("Result");
-		expect(html).toContain("Global Severity: High (75)");
+		expect(html).toContain("Scan Result");
+		expect(html).toContain("Scan Status");
+		expect(html).toContain("Global severity High (75)");
 		expect(html).toContain("1 Issue Found");
 	});
 
@@ -70,21 +69,21 @@ describe("ScanResultPage deterministic contracts", () => {
 		expect(html).toContain("5s");
 	});
 
-	it("groups checks with failed group first", () => {
+	it("groups findings section before passed checks section", () => {
 		const html = renderPage();
-		const failedIndex = html.indexOf("Issue Detected");
-		const passedIndex = html.indexOf("No Issues Found");
+		const failedIndex = html.indexOf("Findings");
+		const passedIndex = html.indexOf("Passed Checks");
 
 		expect(failedIndex).toBeGreaterThan(-1);
 		expect(passedIndex).toBeGreaterThan(-1);
 		expect(failedIndex).toBeLessThan(passedIndex);
 	});
 
-	it("renders expandable findings with indexed labels", () => {
+	it("renders findings with indexed labels and code styling", () => {
 		const html = renderPage();
 
 		expect(html).toContain("Finding #1");
-		expect(html).toContain("font-mono");
+		expect(html).toContain("overflow-x-auto");
 	});
 
 	it("renders rerun scan CTA", () => {
@@ -157,10 +156,21 @@ describe("ScanResultPage pending state", () => {
 	it("renders loading state without check results when status is pending", () => {
 		const html = renderPage({ status: "pending", checks: [], finishedAtIso: null, durationMs: 0 });
 
-		expect(html).toContain("Scan In Progress");
-		expect(html).toContain("Waiting for scan results\u2026");
-		expect(html).not.toContain("Global Severity");
-		expect(html).not.toContain("Re-run Scan");
+		expect(html).toContain("Scan in progress");
+		expect(html).toContain("Loading check result");
+		expect(html).not.toContain("Global severity");
+		expect(html).toContain("Re-run Scan");
 		expect(html).not.toContain("Duration");
+	});
+});
+
+describe("ScanResultPage failed state", () => {
+	it("renders error state with recovery action", () => {
+		const html = renderPage({ status: "failed", checks: [], finishedAtIso: null, durationMs: 0 });
+
+		expect(html).toContain("Scan failed before results were saved.");
+		expect(html).toContain("No findings available");
+		expect(html).toContain("Use Re-run Scan to retry.");
+		expect(html).toContain("Re-run Scan");
 	});
 });

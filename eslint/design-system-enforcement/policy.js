@@ -9,6 +9,9 @@ export const designSystemPolicy = {
     "ScanCard",
     "StatusBadge",
     "Divider",
+    "PageHeader",
+    "EmptyStateCard",
+    "SkeletonList",
   ]),
   approvedRawElements: new Set([
     "html",
