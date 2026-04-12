@@ -21,12 +21,12 @@ describe("GET /", () => {
 		expect(html).toContain("name=\"domain\"");
 	});
 
-	it("renders demo scan targets directly in initial html", async () => {
+	it("renders demo scan target directly in initial html", async () => {
 		const res = await app.request("/");
 		expect(res.status).toBe(200);
 		const html = await res.text();
 
-		expect(html).toMatch(/name="domain"[^>]*value="[^"]*\/sandbox\/website\/examples\/pem-key\/"/);
+		expect(html).toMatch(/name="domain"[^>]*value="[^"]*\/sandbox\/demo"/);
 	});
 });
 
@@ -149,43 +149,20 @@ describe("POST /qualify", () => {
 	});
 });
 
-describe("GET /sandbox/website", () => {
-	it("returns examples home page", async () => {
-		const res = await app.request("/sandbox/website");
+describe("GET /sandbox/demo", () => {
+	it("returns demo website page", async () => {
+		const res = await app.request("/sandbox/demo");
 		expect(res.status).toBe(200);
 		expect(res.headers.get("content-type")).toContain("text/html");
 		const html = await res.text();
-		expect(html).toContain("Sandbox Website Examples");
-		expect(html).toContain("Open site example");
-		expect(html).toContain("Scan with tool");
-	});
-
-	it("renders sandbox scan targets directly in initial html", async () => {
-		const res = await app.request("/sandbox/website");
-		expect(res.status).toBe(200);
-		const html = await res.text();
-
-		expect(html).toMatch(/name="domain"[^>]*value="[^"]*\/sandbox\/website\/examples\/pem-key\/"/);
-	});
-
-	it("returns example page in folder for pem-key", async () => {
-		const res = await app.request("/sandbox/website/examples/pem-key/");
-		expect(res.status).toBe(200);
-		expect(res.headers.get("content-type")).toContain("text/html");
-		const html = await res.text();
-		expect(html).toContain("PEM key in frontend bundle");
-		expect(html).toContain('<script src="/sandbox/website/examples/pem-key/assets/main.js"></script>');
-	});
-
-	it("returns not found for unknown scenario", async () => {
-		const res = await app.request("/sandbox/website/unknown");
-		expect(res.status).toBe(404);
+		expect(html).toContain("Secret Detector Demo Website");
+		expect(html).toContain('<script src="/sandbox/demo/assets/main.js"></script>');
 	});
 });
 
-describe("GET /sandbox/website/examples/:scenario/assets/:asset", () => {
+describe("GET /sandbox/demo/assets/main.js", () => {
 	it("returns fixture javascript content", async () => {
-		const res = await app.request("/sandbox/website/examples/credential-url/assets/main.js");
+		const res = await app.request("/sandbox/demo/assets/main.js");
 		expect(res.status).toBe(200);
 		expect(res.headers.get("content-type")).toContain("application/javascript");
 		const js = await res.text();

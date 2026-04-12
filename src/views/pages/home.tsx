@@ -1,18 +1,8 @@
 import { z } from "zod";
 import type { FC } from "hono/jsx";
-import { Divider } from "../components/Divider.js";
 import { ScanCard } from "../components/ScanCard.js";
 import { Section } from "../components/Section.js";
 import { Layout } from "../layout.js";
-
-const demoExamples = [
-	{ slug: "pem-key", title: "PEM key in frontend bundle" },
-	{ slug: "jwt", title: "JWT token shipped to client" },
-	{ slug: "credential-url", title: "Credential in URL" },
-	{ slug: "env-var-key", title: "Environment variable key leak" },
-	{ slug: "no-leak", title: "Clean baseline" },
-	{ slug: "multiple", title: "Multiple scripts, first one leaks" }
-] as const;
 
 export const homePagePropsSchema = z.object({
 	domain: z.string().min(1),
@@ -44,7 +34,7 @@ export const HomePage: FC<HomePageProps> = z
 									name="domain"
 									type="text"
 									required
-									placeholder={`${domain}/sandbox/website/examples/pem-key/`}
+									placeholder={`${domain}/sandbox/demo`}
 									class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
 								/>
 								<button
@@ -57,35 +47,21 @@ export const HomePage: FC<HomePageProps> = z
 						</ScanCard>
 					</Section>
 
-					<Divider />
-
-					<Section title="Demo Examples" description="Open a sandbox website directly, or run it through the scan tool.">
-						<ul class="space-y-3">
-							{demoExamples.map((example) => {
-								const examplePath = `/sandbox/website/examples/${example.slug}/`;
-
-								return (
-									<li class="rounded-md border border-border bg-card p-4" key={example.slug}>
-										<p class="text-sm font-medium text-foreground">{example.title}</p>
-										<div class="mt-2 flex gap-3">
-											<a href={examplePath} class="text-sm text-foreground underline">
-												Open site
-											</a>
-										<form action="/scan" method="post">
-											<input
-												type="hidden"
-												name="domain"
-												value={`${domain}/sandbox/website/examples/${example.slug}/`}
-											/>
-											<button type="submit" class="text-sm text-foreground underline">
-												Scan with tool
-											</button>
-											</form>
-										</div>
-									</li>
-								);
-							})}
-						</ul>
+					<Section title="Demo Website" description="Open the sandbox demo website or run a scan against it.">
+						<div class="rounded-md border border-border bg-card p-4">
+							<p class="text-sm font-medium text-foreground">Security issues demo website</p>
+							<div class="mt-2 flex gap-3">
+								<a href="/sandbox/demo" class="text-sm text-foreground underline">
+									Open site
+								</a>
+								<form action="/scan" method="post">
+									<input type="hidden" name="domain" value={`${domain}/sandbox/demo`} />
+									<button type="submit" class="text-sm text-foreground underline">
+										Scan with tool
+									</button>
+								</form>
+							</div>
+						</div>
 					</Section>
 				</div>
 			</Layout>

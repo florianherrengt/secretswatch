@@ -27,12 +27,32 @@ Deliver a specification that enables an agent to implement the system **without 
   - Execution steps
 
 - Define **clear contracts** between parts of the system
+- Define relevant unit, integration and end-to-end tests
 
 ### Constraints
 
 - **Do NOT write implementation code**
 - You may include **small illustrative snippets or pseudo-structures only when necessary for clarity**, but never full implementations
 - Avoid ambiguity, assumptions, or high-level handwaving
+
+### Testing
+
+Define a **pragmatic test plan** covering unit, integration, and end-to-end tests.
+
+For each type, specify:
+
+- Scope and objectives
+- Key test cases (including edge/failure cases)
+- Inputs/outputs and assertions
+- Mocked vs real dependencies
+
+Guidelines:
+
+- Use the **simplest test type that gives confidence**
+- **Avoid redundant/over-testing**
+- Default to **E2E when unsure**, with at least one **full critical flow test**
+- Ensure tests are **deterministic and reproducible**
+- Focus on **critical paths and system boundaries**
 
 ### Research & External Validation
 

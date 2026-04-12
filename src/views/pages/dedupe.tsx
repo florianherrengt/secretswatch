@@ -46,7 +46,7 @@ export const DedupeInputPage: FC<DedupeInputPageProps> = z
 									type="text"
 									required
 									value={defaultDomain ?? ""}
-									placeholder="localhost:3000/sandbox/website/examples/pem-key/"
+									placeholder="localhost:3000/sandbox/demo"
 									class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
 								/>
 								<button

@@ -544,3 +544,20 @@ Top navigation behavior is now centralized, deterministic, and reusable across p
 
 **Outcome:**
 Scans now detect publicly accessible source map files that expose original source code, variable names, and file paths from production JavaScript bundles.
+
+---
+
+## v0.29 — Unified Demo Website for Detection Regression
+
+**Consolidated sandbox testing and product demoing into one static vulnerable website that exercises every built-in check in a single scan.**
+
+- Replaced the multi-scenario sandbox surface with one canonical demo endpoint (`/sandbox/demo`) served from static HTML/JS assets
+- Removed legacy scenario routes and compatibility paths so the demo contract is now singular and unambiguous
+- Packed all current issue patterns into one JavaScript bundle, including a linked source map, to mirror a realistic frontend leak surface
+- Updated homepage demo actions and scan defaults to target the unified demo website directly
+- Added deterministic build-time asset copy so demo files are always present in production build output
+- Reworked regression coverage so both pipeline and e2e flows enforce that every built-in check produces findings against the demo site
+- Added CI-facing parity guardrails: when a new built-in check is introduced, tests fail until the demo bundle includes a triggering payload
+
+**Outcome:**
+The product now has one reliable, production-like demo target that doubles as a strict regression harness for all built-in detectors, making check evolution safer and easier to validate.

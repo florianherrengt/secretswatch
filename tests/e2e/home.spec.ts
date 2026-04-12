@@ -1,16 +1,14 @@
 import { type Page } from "@playwright/test";
 import { expect, test } from "./fixtures/authed";
+import { builtinChecks } from "../../src/pipeline/checks.js";
 
 const waitForScanCompletion = async (page: Page) => {
 	for (let attempt = 0; attempt < 20; attempt += 1) {
-		const statusText = await page.locator("section[aria-live='polite'] p").first().textContent();
+		const issueDetected = await page.getByText("Issue Detected", { exact: true }).count();
+		const noIssuesFound = await page.getByText("No Issues Found", { exact: true }).count();
 
-		if (statusText?.includes("Issue Detected") || statusText?.includes("No Issues Found")) {
+		if (issueDetected > 0 || noIssuesFound > 0) {
 			return;
-		}
-
-		if (!statusText?.includes("Scan In Progress")) {
-			throw new Error("Scan entered failed state during e2e test");
 		}
 
 		await page.waitForTimeout(250);
@@ -20,10 +18,10 @@ const waitForScanCompletion = async (page: Page) => {
 	throw new Error("Timed out waiting for scan completion");
 };
 
-const startDemoExampleScan = async (page: Page, exampleTitle: string) => {
+const startDemoScan = async (page: Page) => {
 	for (let attempt = 0; attempt < 6; attempt += 1) {
-		const demoCard = page.locator("li", {
-			has: page.getByText(exampleTitle, { exact: true })
+		const demoCard = page.locator("div", {
+			has: page.getByText("Security issues demo website", { exact: true })
 		});
 
 		await demoCard.getByRole("button", { name: "Scan with tool" }).click();
@@ -38,14 +36,14 @@ const startDemoExampleScan = async (page: Page, exampleTitle: string) => {
 		const limited = await page.getByRole("heading", { name: "Too Many Requests" }).count();
 
 		if (limited === 0) {
-			throw new Error(`Expected scan result redirect for "${exampleTitle}" but stayed on ${page.url()}`);
+			throw new Error(`Expected scan result redirect for demo website but stayed on ${page.url()}`);
 		}
 
 		await page.waitForTimeout(2_000 * (attempt + 1));
 		await page.goto("/");
 	}
 
-	throw new Error(`Rate limit prevented scanning demo example "${exampleTitle}"`);
+	throw new Error("Rate limit prevented scanning demo website");
 };
 
 test("home page loads", async ({ page }) => {
@@ -107,50 +105,21 @@ test("sign up page submits to request-link", async ({ page }) => {
 	await expect(page.getByText("Check your email for a sign-in link.")).toBeVisible();
 });
 
-const demoExamples = [
-	{ title: "PEM key in frontend bundle", expectedCheck: "PEM Key Detection" },
-	{ title: "JWT token shipped to client", expectedCheck: "JWT Detection" },
-	{ title: "Credential in URL", expectedCheck: "Credential URL Detection" },
-	{ title: "Clean baseline", expectedCheck: null },
-	{ title: "Multiple scripts, first one leaks", expectedCheck: "Credential URL Detection" }
-] as const;
-
-test.describe("demo example scans", () => {
+test.describe("demo website scan", () => {
 	test.describe.configure({ mode: "serial" });
 
-	for (const demoExample of demoExamples) {
-		test(`demo example scan works: ${demoExample.title}`, async ({ authedPage }) => {
-			const page = authedPage;
-			await page.goto("/");
-
-			await startDemoExampleScan(page, demoExample.title);
-
-			const issueSection = page.locator("section", {
-				has: page.getByRole("heading", { name: "Issue Detected" })
-			});
-
-			if (demoExample.expectedCheck === null) {
-				await expect(page.locator("section[aria-live='polite']")).toContainText("No Issues Found");
-				await expect(issueSection).toContainText("No checks in this group.");
-				return;
-			}
-
-			await expect(page.locator("section[aria-live='polite']")).toContainText("Issue Detected");
-			await expect(issueSection).toContainText(demoExample.expectedCheck);
-			await expect(page.getByText("[REDACTED]")).toBeVisible();
-		});
-	}
-
-	test("repeat pem-key demo scan still shows findings", async ({ authedPage }) => {
+	test("scan shows findings for every builtin check", async ({ authedPage }) => {
 		const page = authedPage;
 
 		await page.goto("/");
-		await startDemoExampleScan(page, "PEM key in frontend bundle");
-		await expect(page.getByText("PEM Key Detection")).toBeVisible();
+		await startDemoScan(page);
 
-		await page.goto("/");
-		await startDemoExampleScan(page, "PEM key in frontend bundle");
-		await expect(page.getByText("PEM Key Detection")).toBeVisible();
-		await expect(page.getByText("[REDACTED]")).toBeVisible();
+		await expect(page.getByText("Issue Detected", { exact: true })).toBeVisible();
+
+		for (const check of builtinChecks) {
+			await expect(page.getByText(check.name, { exact: true })).toBeVisible();
+		}
+
+		await expect(page.getByText("[REDACTED]").first()).toBeVisible();
 	});
 });

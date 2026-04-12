@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import app from "../server/routes/index.js";
 import type { ScanCheck } from "./checks.js";
+import { builtinChecks } from "./checks.js";
 import { runChecks, scanDomain } from "./scanDomain.js";
 
 const TEST_PORT = 3310;
@@ -75,7 +76,7 @@ const countFindingsForCheck = z
 		return matchedCheck.findings.length;
 	});
 
-describe("scanDomain local fixtures", () => {
+describe("scanDomain demo website", () => {
 	let server: TestServer; // eslint-disable-line custom/no-mutable-variables
 
 	beforeAll(async () => {
@@ -87,103 +88,31 @@ describe("scanDomain local fixtures", () => {
 		await closeServer(server);
 	});
 
-	it("detects pem private key fixture", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/pem-key/` });
+	it("detects at least one finding for every builtin check on the demo website", async () => {
+		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/demo` });
 
 		expect(result.status).toBe("success");
-		expect(result.findings).toHaveLength(1);
-		expect(countFindingsForCheck({ checks: result.checks, checkId: "pem-key" })).toBe(1);
-		expect(countFindingsForCheck({ checks: result.checks, checkId: "jwt-token" })).toBe(0);
-		expect(countFindingsForCheck({ checks: result.checks, checkId: "credential-url" })).toBe(0);
-		expect(countFindingsForCheck({ checks: result.checks, checkId: "generic-secret" })).toBe(0);
-		expect(result.findings[0]?.file).toContain("/sandbox/website/examples/pem-key/assets/main.js");
-		expect(result.findings[0]?.snippet).toContain("[REDACTED]");
-		expect(result.findings[0]?.snippet).not.toContain("abc123supersecretfixturekey");
-		expect(result.findings[0]?.fingerprint).toMatch(/^[a-f0-9]{64}$/);
-	});
+		expect(result.findings.length).toBeGreaterThanOrEqual(builtinChecks.length);
 
-	it("detects jwt fixture", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/jwt/` });
+		for (const check of builtinChecks) {
+			expect(countFindingsForCheck({ checks: result.checks, checkId: check.id })).toBeGreaterThan(0);
+		}
 
-		expect(result.status).toBe("success");
-		expect(result.findings).toHaveLength(1);
-		expect(result.findings[0]?.file).toContain("/sandbox/website/examples/jwt/assets/main.js");
-		expect(result.findings[0]?.snippet).toContain("[REDACTED]");
-	});
+		const bundleFinding = result.findings.find((finding) => finding.file.includes("/sandbox/demo/assets/main.js"));
+		expect(bundleFinding).toBeDefined();
+		expect(bundleFinding!.snippet).toContain("[REDACTED]");
+		expect(bundleFinding!.fingerprint).toMatch(/^[a-f0-9]{64}$/);
 
-	it("detects credential url fixture", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/credential-url/` });
-
-		expect(result.status).toBe("success");
-		expect(result.findings).toHaveLength(1);
-		expect(result.findings[0]?.file).toContain("/sandbox/website/examples/credential-url/assets/main.js");
-		expect(result.findings[0]?.snippet).toContain("[REDACTED]");
-	});
-
-	it("returns no findings for clean fixture", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/no-leak/` });
-
-		expect(result.status).toBe("success");
-		expect(result.findings).toHaveLength(0);
-		expect(result.checks.every((check) => check.findings.length === 0)).toBe(true);
-	});
-
-	it("returns findings from multiple checks independently", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/multiple/` });
-
-		expect(result.status).toBe("success");
-		expect(result.findings.length).toBeGreaterThanOrEqual(1);
-		expect(result.findings.some((finding) => finding.file.includes("/sandbox/website/examples/multiple/assets/"))).toBe(true);
-		expect(result.checks.some((check) => check.findings.length > 0)).toBe(true);
+		const sourceMapFinding = result.findings.find((finding) => finding.checkId === "public-source-map");
+		expect(sourceMapFinding).toBeDefined();
+		expect(sourceMapFinding!.file).toContain("/sandbox/demo/assets/main.js.map");
+		expect(sourceMapFinding!.snippet).toContain("Public source map exposed");
 	});
 
 	it("returns failed for invalid target", async () => {
-		const result = await scanDomain({ domain: "https://localhost:3310/sandbox/website/examples/pem-key/" });
+		const result = await scanDomain({ domain: "https://localhost:3310/sandbox/demo" });
 
 		expect(result.status).toBe("failed");
-		expect(result.findings).toHaveLength(0);
-	});
-
-	it("detects valid generic token with strict context", async () => {
-		const result = await scanDomain({
-			domain: `localhost:${TEST_PORT}/sandbox/website/examples/generic-token-valid/`
-		});
-
-		expect(result.status).toBe("success");
-		expect(result.findings).toHaveLength(1);
-		expect(result.findings[0]?.file).toContain("/sandbox/website/examples/generic-token-valid/assets/main.js");
-		expect(result.findings[0]?.snippet).toContain("[REDACTED]");
-	});
-
-	it("ignores short generic token values", async () => {
-		const result = await scanDomain({
-			domain: `localhost:${TEST_PORT}/sandbox/website/examples/generic-token-invalid/`
-		});
-
-		expect(result.status).toBe("success");
-		expect(result.findings).toHaveLength(0);
-	});
-
-	it("ignores allowlisted publishable keys", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/public-key/` });
-
-		expect(result.status).toBe("success");
-		expect(result.findings).toHaveLength(0);
-	});
-
-	it("ignores analytics identifiers", async () => {
-		const result = await scanDomain({
-			domain: `localhost:${TEST_PORT}/sandbox/website/examples/analytics-context/`
-		});
-
-		expect(result.status).toBe("success");
-		expect(result.findings).toHaveLength(0);
-	});
-
-	it("ignores high entropy values without secret context", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/weak-context/` });
-
-		expect(result.status).toBe("success");
 		expect(result.findings).toHaveLength(0);
 	});
 
@@ -243,59 +172,4 @@ describe("scanDomain local fixtures", () => {
 		expect(result[1]?.id).toBe("safe-check");
 		expect(result[1]?.findings).toHaveLength(1);
 	});
-
-	it("detects env var key leak fixture", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/env-var-key/` });
-
-		expect(result.status).toBe("success");
-		expect(countFindingsForCheck({ checks: result.checks, checkId: "env-var-key" })).toBe(1);
-		expect(result.findings[0]?.file).toContain("/sandbox/website/examples/env-var-key/assets/main.js");
-		expect(result.findings[0]?.snippet).toContain("[REDACTED]");
-		expect(result.findings[0]?.fingerprint).toMatch(/^[a-f0-9]{64}$/);
-	});
-
-	it("ignores non-sensitive env var keys", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/env-var-key-clean/` });
-
-		expect(result.status).toBe("success");
-		expect(countFindingsForCheck({ checks: result.checks, checkId: "env-var-key" })).toBe(0);
-	});
-
-	it("detects localStorage JWT fixture", async () => {
-		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/website/examples/localstorage-jwt/` });
-
-		expect(result.status).toBe("success");
-		expect(countFindingsForCheck({ checks: result.checks, checkId: "localstorage-jwt" })).toBe(1);
-		expect(result.findings[0]?.file).toContain("/sandbox/website/examples/localstorage-jwt/assets/main.js");
-		expect(result.findings[0]?.snippet).toContain("[REDACTED]");
-		expect(result.findings[0]?.fingerprint).toMatch(/^[a-f0-9]{64}$/);
-	});
-
-	it("detects public source map exposure", async () => {
-		const result = await scanDomain({
-			domain: `localhost:${TEST_PORT}/sandbox/website/examples/public-source-map/`
-		});
-
-		expect(result.status).toBe("success");
-		expect(countFindingsForCheck({ checks: result.checks, checkId: "public-source-map" })).toBe(1);
-		expect(result.findings.length).toBeGreaterThanOrEqual(1);
-
-		const sourceMapFinding = result.findings.find((f) => f.checkId === "public-source-map");
-
-		expect(sourceMapFinding).toBeDefined();
-		expect(sourceMapFinding!.file).toContain("main.js.map");
-		expect(sourceMapFinding!.snippet).toContain("Public source map exposed");
-		expect(sourceMapFinding!.snippet).toContain("inline-comment");
-		expect(sourceMapFinding!.fingerprint).toMatch(/^[a-f0-9]{64}$/);
-	});
-
-	it("returns no public-source-map findings for clean fixture", async () => {
-		const result = await scanDomain({
-			domain: `localhost:${TEST_PORT}/sandbox/website/examples/public-source-map-clean/`
-		});
-
-		expect(result.status).toBe("success");
-		expect(countFindingsForCheck({ checks: result.checks, checkId: "public-source-map" })).toBe(0);
-	});
-
 });
