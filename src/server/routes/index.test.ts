@@ -93,6 +93,22 @@ describe("POST /domains", () => {
 	});
 });
 
+describe("GET /domains/confirm", () => {
+	it("returns 401 when not authenticated", async () => {
+		const res = await app.request("/domains/confirm?text=test&next=%2Fdomains&back=%2Fdomains");
+		expect(res.status).toBe(401);
+	});
+});
+
+describe("POST /domains/:domainId/delete", () => {
+	it("returns 401 when not authenticated", async () => {
+		const res = await app.request("/domains/00000000-0000-4000-8000-000000000000/delete", {
+			method: "POST"
+		});
+		expect(res.status).toBe(401);
+	});
+});
+
 describe("POST /qualify", () => {
 	it("returns validation error when input is invalid", async () => {
 		const res = await app.request("/qualify", {

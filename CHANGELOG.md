@@ -473,3 +473,22 @@ The scanner now detects insecure token storage patterns in localStorage — a co
 
 **Outcome:**
 Scan results now present a stable, high-signal triage surface with stronger UX determinism and fully covered state behavior across pending, failed, and completed runs.
+
+---
+
+## v0.25 — Domains UX + Safe Deletion Flow
+
+**Reworked `/domains` into a clearer operations surface with inline health state and a reusable confirmation step**
+
+- Moved `Add Domain` to the top to prioritize primary intent before list management
+- Enriched saved-domain rows with last-check outcome badges from latest successful scan:
+  - green tick for passed (no findings)
+  - red cross for issues found
+  - neutral state when no successful scan exists yet
+- Added per-domain delete action with explicit confirmation to prevent accidental removal
+- Introduced a generic confirm page (`/domains/confirm`) that accepts display text, next endpoint, and cancel target for reusable destructive-action UX
+- Added deletion endpoint (`POST /domains/:domainId/delete`) with input validation and auth protection
+- Expanded route coverage for new confirm/delete endpoints and kept frontend design-system enforcement green
+
+**Outcome:**
+Domain management now supports faster triage and safer cleanup, with clear scan signal visibility and a reusable confirmation mechanism for destructive actions.
