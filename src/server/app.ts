@@ -28,6 +28,16 @@ app.onError(
 		})
 );
 
+app.notFound(
+	z
+		.function()
+		.args(z.custom<Context>())
+		.returns(z.instanceof(Response))
+		.implement((c) => {
+			return c.html("<h1>404 Not Found</h1>", 404);
+		})
+);
+
 const port = Number(process.env.PORT) || 3000;
 const domain = z.string().min(1).parse(process.env.DOMAIN ?? `localhost:${port}`);
 

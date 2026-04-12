@@ -83,6 +83,14 @@ export const Layout: FC<LayoutProps> = z
       --error-foreground: 0 76% 13%;
     }
   }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 						`}
 					</style>

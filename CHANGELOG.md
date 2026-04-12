@@ -626,3 +626,18 @@ The queue monitor now reliably loads at `/admin/queues`, restoring expected admi
 
 **Outcome:**
 Admin operational surfaces are now isolated from user-session auth and require explicit admin credentials, reducing accidental exposure risk.
+
+---
+
+## v0.33 — Homepage Intake Refresh + 404 Guardrail
+
+**Reframed the public entry flow around direct scan intake while adding a deterministic not-found fallback.**
+
+- Rebuilt the homepage into a focused scan-first intake surface with a single dominant action (`Scan now`) and immediate domain input
+- Simplified authenticated navigation intent from account settings to workspace access by promoting a persistent `Dashboard` entry point
+- Added deterministic 404 handling for unknown routes so invalid paths now return a clear not-found response instead of ambiguous failures
+- Expanded design-system policy coverage to support the new landing layout and shared icon primitives without weakening lint enforcement
+- Updated unit and end-to-end contracts around homepage behavior, navigation labels, and scan submission flow from the new entry experience
+
+**Outcome:**
+Users now land in a clearer scan-first experience, can jump directly into their domain workspace, and receive predictable feedback when navigating to invalid routes.

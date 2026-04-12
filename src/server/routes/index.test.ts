@@ -20,7 +20,7 @@ describe("GET /", () => {
 		expect(res.status).toBe(200);
 		expect(res.headers.get("content-type")).toContain("text/html");
 		const html = await res.text();
-		expect(html).toContain("<form action=\"/scan\" method=\"post\"");
+		expect(html).toContain("action=\"/scan\" method=\"post\"");
 		expect(html).toContain("name=\"domain\"");
 	});
 
@@ -206,5 +206,28 @@ describe("GET /sandbox/demo/assets/main.js", () => {
 		expect(res.headers.get("content-type")).toContain("application/javascript");
 		const js = await res.text();
 		expect(js).toContain("https://admin:password@internal.api.com");
+	});
+});
+
+describe("404 Not Found", () => {
+	it("returns 404 for non-existent routes", async () => {
+		const res = await app.request("/nonexistent-route");
+		expect(res.status).toBe(404);
+		const html = await res.text();
+		expect(html).toContain("404 Not Found");
+	});
+
+	it("returns 404 for nested non-existent routes", async () => {
+		const res = await app.request("/api/v1/nonexistent");
+		expect(res.status).toBe(404);
+		const html = await res.text();
+		expect(html).toContain("404 Not Found");
+	});
+
+	it("returns 404 for random paths", async () => {
+		const res = await app.request("/some/random/path/that/does/not/exist");
+		expect(res.status).toBe(404);
+		const html = await res.text();
+		expect(html).toContain("404 Not Found");
 	});
 });
