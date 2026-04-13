@@ -19,6 +19,16 @@ export const SettingsPage: FC<SettingsPageProps> = z
 			<Layout title="Settings" topNavMode="app">
 				<div class="space-y-6">
 					<h1 class="text-xl font-semibold text-foreground">Settings</h1>
+					<Section title="Navigation">
+						<ScanCard>
+							<a
+								href="/domains"
+								class="inline-flex rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+							>
+								Go to domains
+							</a>
+						</ScanCard>
+					</Section>
 					<Section title="Account">
 						<ScanCard>
 							<div class="space-y-4">

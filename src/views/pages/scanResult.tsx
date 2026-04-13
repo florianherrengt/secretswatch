@@ -42,6 +42,7 @@ export const scanResultCheckSchema = z.object({
 export const scanResultPagePropsSchema = z.object({
 	scanId: z.string(),
 	targetUrl: z.string(),
+	topNavMode: z.enum(["auth", "app"]),
 	status: scanStatusSchema,
 	startedAtIso: z.string(),
 	finishedAtIso: z.string().nullable(),
@@ -356,7 +357,7 @@ export const ScanResultPage: FC<ScanResultPageProps> = z
 
 		if (props.status === "pending") {
 			return (
-				<Layout title="Scan Result" autoRefreshSeconds={1}>
+				<Layout title="Scan Result" autoRefreshSeconds={1} topNavMode={props.topNavMode}>
 					<div class="space-y-8">
 						<PageHeader
 							title="Scan Result"
@@ -409,7 +410,7 @@ export const ScanResultPage: FC<ScanResultPageProps> = z
 
 		if (props.status === "failed") {
 			return (
-				<Layout title="Scan Result">
+				<Layout title="Scan Result" topNavMode={props.topNavMode}>
 					<div class="space-y-8">
 						<PageHeader
 							title="Scan Result"
@@ -482,7 +483,7 @@ export const ScanResultPage: FC<ScanResultPageProps> = z
 					: "success";
 
 		return (
-			<Layout title="Scan Result">
+			<Layout title="Scan Result" topNavMode={props.topNavMode}>
 				<div class="space-y-8">
 					<PageHeader
 						title="Scan Result"

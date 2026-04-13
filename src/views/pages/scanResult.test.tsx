@@ -11,6 +11,7 @@ import {
 const baseProps: ScanResultPageProps = {
 	scanId: "53a4ed31-f9f8-4ddb-9f56-a171092d6ea2",
 	targetUrl: "example.com",
+	topNavMode: "app",
 	status: "success",
 	startedAtIso: "2026-01-01T00:00:00.000Z",
 	finishedAtIso: "2026-01-01T00:00:05.000Z",
@@ -91,6 +92,23 @@ describe("ScanResultPage deterministic contracts", () => {
 
 		expect(html).toContain("Re-run Scan");
 		expect(html).toContain("action=\"/scan\"");
+	});
+
+	it("renders app nav actions in app mode", () => {
+		const html = renderPage({ topNavMode: "app" });
+
+		expect(html).toContain("href=\"/settings\"");
+		expect(html).toContain("Settings");
+		expect(html).not.toContain("href=\"/auth/sign-in\"");
+		expect(html).not.toContain("href=\"/auth/sign-up\"");
+	});
+
+	it("renders auth nav actions in auth mode", () => {
+		const html = renderPage({ topNavMode: "auth" });
+
+		expect(html).toContain("href=\"/auth/sign-in\"");
+		expect(html).toContain("href=\"/auth/sign-up\"");
+		expect(html).not.toContain("href=\"/settings\"");
 	});
 });
 

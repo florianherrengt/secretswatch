@@ -18,6 +18,8 @@ import {
 	upsertDomainRecord
 } from "../../scan/scanJob.js";
 import { ioredisClient } from "../../scan/redis.js";
+import { extractSessionId } from "../../auth/middleware.js";
+import { getSession } from "../../auth/index.js";
 
 const scanRoutes = new Hono();
 
@@ -249,6 +251,10 @@ scanRoutes.get(
 		.args(z.custom<Context>())
 		.returns(z.custom<Response | Promise<Response>>())
 		.implement(async (c) => {
+			const sessionId = extractSessionId(c);
+			const session = sessionId ? await getSession(sessionId) : null;
+			const topNavMode = session ? "app" : "auth";
+
 			const params = scanParamsSchema.safeParse(c.req.param());
 
 			if (!params.success) {
@@ -283,6 +289,7 @@ scanRoutes.get(
 			const viewProps = scanResultPagePropsSchema.parse({
 				scanId: scanRecord.id,
 				targetUrl: domainRecord.hostname,
+				topNavMode,
 				status: scanRecord.status,
 				startedAtIso: scanRecord.startedAt.toISOString(),
 				finishedAtIso: scanRecord.finishedAt ? scanRecord.finishedAt.toISOString() : null,

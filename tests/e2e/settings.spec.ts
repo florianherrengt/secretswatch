@@ -14,6 +14,7 @@ test.describe("Settings", () => {
 		expect(html).toContain("Settings");
 		expect(html).toContain(authSession.email);
 		expect(html).toContain("Sign out");
+		expect(html).toContain("href=\"/domains\"");
 	});
 
 	test("GET /settings returns 401 when not authenticated", async ({ request }) => {
@@ -64,6 +65,7 @@ test.describe("Settings", () => {
 
 		await expect(authedPage.locator("h1")).toContainText("Settings");
 		await expect(authedPage.locator("text=Email").locator("..")).toContainText(authSession.email);
+		await expect(authedPage.getByRole("link", { name: "Go to domains" })).toBeVisible();
 
 		await authedPage.locator('form[action="/auth/logout"] button[type="submit"]').click();
 		await authedPage.waitForURL("/");

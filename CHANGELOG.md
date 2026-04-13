@@ -656,3 +656,18 @@ Users now land in a clearer scan-first experience, can jump directly into their 
 
 **Outcome:**
 The product now has stable, reproducible styling across environments, with a clearer frontend delivery path that is easier to validate, lint, and ship reliably.
+
+---
+
+## v0.35 — Auth Navigation Consistency + App Entry Recovery
+
+**Standardized top-nav auth behavior across scan flows while preserving a direct app-entry shortcut on home.**
+
+- Extended scan result rendering to use session-aware nav mode selection, so authenticated users now see the signed-in contract consistently on `/scan/:id`
+- Preserved deterministic auth contracts in shared navigation: signed-out users get `Sign in`/`Sign up`, signed-in users get `Settings`
+- Kept homepage as an intentional exception by restoring a dedicated `Go to app` action for authenticated users that links directly to `/domains`
+- Added an explicit in-product route from settings back to domain workspace to prevent dead-end navigation after moving top-nav actions to auth mode
+- Expanded page-level and end-to-end coverage for nav-mode behavior so signed-in/signed-out action sets remain mutually exclusive across core user journeys
+
+**Outcome:**
+Navigation now behaves consistently with authentication state across result and account surfaces, while authenticated users still retain a fast path into the app workspace from home.

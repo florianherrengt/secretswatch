@@ -59,12 +59,12 @@ test.describe("home page", () => {
     await expect(page.getByRole("link", { name: "Sign up" })).toBeVisible();
   });
 
-  test("shows Settings button when logged in", async ({ authedPage }) => {
+  test("shows go to app button when logged in", async ({ authedPage }) => {
     const page = authedPage;
 
     await page.goto("/");
 
-    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Go to app" })).toBeVisible();
   });
 
   test("manual scan submits domain and reaches scan result", async ({

@@ -14,8 +14,6 @@ export const HomePage: FC<HomePageProps> = z
   .args(homePagePropsSchema)
   .returns(z.custom<ReturnType<FC<HomePageProps>>>())
   .implement(({ domain, isLoggedIn }) => {
-    const navMode = isLoggedIn ? "app" : "auth";
-
     return (
       <html lang="en">
         <head>
@@ -29,7 +27,16 @@ export const HomePage: FC<HomePageProps> = z
             <header class="py-6">
               <div class="flex items-center justify-between rounded-xl border border-border bg-card p-4">
                 <strong class="text-lg text-foreground">Secret Detector</strong>
-                <AuthNavActions mode={navMode} />
+                {isLoggedIn ? (
+                  <a
+                    href="/domains"
+                    class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    Go to app
+                  </a>
+                ) : (
+                  <AuthNavActions mode="auth" />
+                )}
               </div>
             </header>
 
