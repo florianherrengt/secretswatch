@@ -286,7 +286,8 @@ scanRoutes.get(
 				? Math.max(0, scanRecord.finishedAt.getTime() - scanRecord.startedAt.getTime())
 				: 0;
 
-			const viewProps = scanResultPagePropsSchema.parse({
+			const discoveryMetadata = scanRecord.discoveryMetadata;
+		const viewProps = scanResultPagePropsSchema.parse({
 				scanId: scanRecord.id,
 				targetUrl: domainRecord.hostname,
 				topNavMode,
@@ -294,7 +295,15 @@ scanRoutes.get(
 				startedAtIso: scanRecord.startedAt.toISOString(),
 				finishedAtIso: scanRecord.finishedAt ? scanRecord.finishedAt.toISOString() : null,
 				durationMs,
-				checks
+				checks,
+				discoveredSubdomains: discoveryMetadata?.discoveredSubdomains ?? [],
+				discoveryStats: discoveryMetadata?.stats ?? {
+					fromLinks: 0,
+					fromSitemap: 0,
+					totalConsidered: 0,
+					totalAccepted: 0,
+					truncated: false
+				}
 			});
 
 			return c.html(render(ScanResultPage, viewProps));

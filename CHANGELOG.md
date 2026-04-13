@@ -671,3 +671,19 @@ The product now has stable, reproducible styling across environments, with a cle
 
 **Outcome:**
 Navigation now behaves consistently with authentication state across result and account surfaces, while authenticated users still retain a fast path into the app workspace from home.
+
+---
+
+## v0.36 — Subdomain Discovery + Scan Surface Hardening
+
+**Expanded each scan into a safer multi-target crawl that discovers subdomains, persists discovery metadata, and exposes it directly in the result experience.**
+
+- Added one-hop subdomain discovery from main-page links and sitemap/robots sources, with strict host matching, deterministic ordering, and capped target expansion
+- Enforced redirect and host-safety guardrails across discovery and fetch paths so scans do not silently broaden trust boundaries
+- Extended scan outputs and persistence contracts to include discovered subdomains and discovery stats, then wired the same data into route/view payloads
+- Upgraded scan result UX to show a dedicated "Subdomains Scanned" list with explicit empty-state guidance and truncation visibility
+- Added higher-level contract coverage across pipeline behavior, route rendering, persistence metadata write paths, and end-to-end scan visibility
+- Hardened local e2e reliability by adding deterministic database preparation before Playwright web-server startup
+
+**Outcome:**
+Scans now surface and retain cross-subdomain coverage as first-class product evidence, giving users clearer attack-surface visibility and more reliable end-to-end scan behavior.

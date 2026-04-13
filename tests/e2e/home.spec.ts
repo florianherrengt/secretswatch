@@ -87,4 +87,43 @@ test.describe("home page", () => {
       await expect(page.getByText(check.name, { exact: true })).toBeVisible();
     }
   });
+
+  test("scan result shows discovered subdomains section with empty state", async ({
+    authedPage,
+  }) => {
+    const page = authedPage;
+
+    await page.goto("/");
+    await page
+      .getByPlaceholder("Enter any URL to scan")
+      .fill("localhost:3000/sandbox/demo");
+    await page.getByRole("button", { name: "Scan now" }).click();
+
+    await waitForScanFromHome(page);
+
+    await expect(
+      page.getByText("Discovered Subdomains"),
+    ).toBeVisible();
+    await expect(
+      page.getByText("No subdomains discovered"),
+    ).toBeVisible();
+  });
+
+  test("scan result shows discovered subdomains when discovery is enabled", async ({
+    authedPage,
+  }) => {
+    const page = authedPage;
+
+    await page.goto("/");
+    await page
+      .getByPlaceholder("Enter any URL to scan")
+      .fill("app.localhost:3000/sandbox/demo");
+    await page.getByRole("button", { name: "Scan now" }).click();
+
+    await waitForScanFromHome(page);
+
+    await expect(page.getByText("Discovered Subdomains")).toBeVisible();
+    await expect(page.getByText("api.app.localhost")).toBeVisible();
+    await expect(page.getByText("cdn.app.localhost")).toBeVisible();
+  });
 });

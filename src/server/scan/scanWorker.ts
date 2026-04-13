@@ -114,14 +114,14 @@ const processScanQueueJob = z
 			});
 
 			if (persistedResult.status === "failed") {
-				const failure = new Error(`Scan failed for domain ${domain}`);
-				console.error("[scan-worker] Scan pipeline reported failed status", {
+				console.warn("[scan-worker] Scan pipeline reported failed status", {
 					jobId: job.id,
 					domain,
 					scanId: scanRecord.id,
-					error: failure.message
+					error: `Scan failed for domain ${domain}`
 				});
-				throw failure;
+
+				return scanWorkerResultSchema.parse(persistedResult);
 			}
 
 			return scanWorkerResultSchema.parse(persistedResult);

@@ -43,7 +43,15 @@ const baseProps: ScanResultPageProps = {
 				}
 			]
 		}
-	]
+	],
+	discoveredSubdomains: [],
+	discoveryStats: {
+		fromLinks: 0,
+		fromSitemap: 0,
+		totalConsidered: 0,
+		totalAccepted: 0,
+		truncated: false
+	}
 };
 
 const renderPage = (overrides: Partial<ScanResultPageProps> = {}): string => {
@@ -214,5 +222,74 @@ describe("ScanResultPage failed state", () => {
 		expect(html).toContain("No findings available");
 		expect(html).toContain("Use Re-run Scan to retry.");
 		expect(html).toContain("Re-run Scan");
+	});
+});
+
+describe("ScanResultPage discovery rendering", () => {
+	it("renders discovered subdomains list when present", () => {
+		const html = renderPage({
+			discoveredSubdomains: ["api.example.com", "cdn.example.com"],
+			discoveryStats: {
+				fromLinks: 2,
+				fromSitemap: 0,
+				totalConsidered: 3,
+				totalAccepted: 2,
+				truncated: false
+			}
+		});
+
+		expect(html).toContain("Discovered Subdomains");
+		expect(html).toContain("api.example.com");
+		expect(html).toContain("cdn.example.com");
+		expect(html).toContain("2 links, 0 sitemap");
+	});
+
+	it("renders empty-state message when no subdomains discovered", () => {
+		const html = renderPage({
+			discoveredSubdomains: [],
+			discoveryStats: {
+				fromLinks: 0,
+				fromSitemap: 0,
+				totalConsidered: 0,
+				totalAccepted: 0,
+				truncated: false
+			}
+		});
+
+		expect(html).toContain("Discovered Subdomains");
+		expect(html).toContain("No subdomains discovered");
+		expect(html).toContain("Use Re-run Scan after deploying pages that expose subdomain links or sitemap entries.");
+	});
+
+	it("renders truncated indicator when discovery was truncated", () => {
+		const html = renderPage({
+			discoveredSubdomains: ["a.example.com"],
+			discoveryStats: {
+				fromLinks: 5,
+				fromSitemap: 3,
+				totalConsidered: 25,
+				totalAccepted: 20,
+				truncated: true
+			}
+		});
+
+		expect(html).toContain("(truncated)");
+	});
+
+	it("renders long subdomain values with break-words", () => {
+		const longSub = "a".repeat(100) + ".example.com";
+		const html = renderPage({
+			discoveredSubdomains: [longSub],
+			discoveryStats: {
+				fromLinks: 1,
+				fromSitemap: 0,
+				totalConsidered: 1,
+				totalAccepted: 1,
+				truncated: false
+			}
+		});
+
+		expect(html).toContain(longSub);
+		expect(html).toContain("break-words");
 	});
 });

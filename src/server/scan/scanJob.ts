@@ -181,11 +181,19 @@ export const resolveScanRecordForJob = z
 		return createPendingScanRecord(domainId);
 	});
 
-const scanPersistenceResultSchema = z.object({
+export const scanPersistenceResultSchema = z.object({
 	scanId: z.string().uuid(),
 	status: scanStatusSchema,
 	findingsCount: z.number().int().nonnegative(),
-	insertedFindingsCount: z.number().int().nonnegative()
+	insertedFindingsCount: z.number().int().nonnegative(),
+	discoveredSubdomains: z.array(z.string()),
+	discoveryStats: z.object({
+		fromLinks: z.number().int().nonnegative(),
+		fromSitemap: z.number().int().nonnegative(),
+		totalConsidered: z.number().int().nonnegative(),
+		totalAccepted: z.number().int().nonnegative(),
+		truncated: z.boolean()
+	})
 });
 
 export type ScanPersistenceResult = z.infer<typeof scanPersistenceResultSchema>;
@@ -231,7 +239,11 @@ export const persistScanOutcome = z
 			.update(scans)
 			.set({
 				status: pipelineResult.status,
-				finishedAt
+				finishedAt,
+				discoveryMetadata: {
+					discoveredSubdomains: pipelineResult.discoveredSubdomains,
+					stats: pipelineResult.discoveryStats
+				}
 			})
 			.where(eq(scans.id, scanId));
 
@@ -239,7 +251,9 @@ export const persistScanOutcome = z
 			scanId,
 			status: pipelineResult.status,
 			findingsCount: dedupedFindings.length,
-			insertedFindingsCount: newFindings.length
+			insertedFindingsCount: newFindings.length,
+			discoveredSubdomains: pipelineResult.discoveredSubdomains,
+			discoveryStats: pipelineResult.discoveryStats
 		});
 	});
 

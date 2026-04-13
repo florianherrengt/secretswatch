@@ -22,7 +22,7 @@ export default defineConfig({
 		}
 	],
 	webServer: {
-		command: "npm run build && npm run start",
+		command: "npm run test:e2e:serve",
 		url: baseURL,
 		reuseExistingServer: !process.env.CI,
 		env: {

@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { z } from "zod";
 import {
 	builtinChecks,
@@ -9,6 +10,15 @@ import {
 	type SourceMapProbe,
 	type SourceMapDiscoveryMethod
 } from "./checks.js";
+import {
+	discoverSubdomainTargets,
+	shouldSkipDiscovery,
+	resolveAndCheckHost,
+	isSubdomainOf,
+	discoveryStatsSchema,
+	getEmptyDiscoveryOutput,
+	type DiscoveryOutput
+} from "./discovery.js";
 
 export const ScanDomainInput = z.object({
 	domain: z.string()
@@ -25,7 +35,9 @@ const scanFindingWithCheckIdSchema = z.object({
 export const ScanDomainOutput = z.object({
 	status: z.enum(["success", "failed"]),
 	checks: z.array(checkResultSchema),
-	findings: z.array(scanFindingWithCheckIdSchema)
+	findings: z.array(scanFindingWithCheckIdSchema),
+	discoveredSubdomains: z.array(z.string()),
+	discoveryStats: discoveryStatsSchema
 });
 
 export type ScanDomainInput = z.infer<typeof ScanDomainInput>;
@@ -38,6 +50,9 @@ const SCRIPT_MAX_BYTES = 50 * 1024;
 const MAX_SCRIPT_CANDIDATES = 3;
 const SOURCE_MAP_TIMEOUT_MS = 3_000;
 const SOURCE_MAP_MAX_BYTES = 100 * 1024;
+const MAX_TOTAL_SCRIPTS = 200;
+const MAX_TOTAL_SOURCE_MAPS = 200;
+const MAX_CONCURRENT_FETCHES = 5;
 
 const isValidHostname = z
 	.function()
@@ -201,13 +216,65 @@ const readResponseTextWithLimit = z
 		return body;
 	});
 
+type Semaphore = {
+	acquire: () => Promise<void>;
+	release: () => void;
+};
+
+const createSemaphore = z
+	.function()
+	.args(z.number().int().positive())
+	.returns(z.custom<Semaphore>())
+	.implement((limit) => {
+		let active = 0; // eslint-disable-line custom/no-mutable-variables
+		const queue: Array<() => void> = [];
+
+		const acquire = z
+			.function()
+			.args()
+			.returns(z.promise(z.void()))
+			.implement(async () => {
+				if (active < limit) {
+					active++;
+					return;
+				}
+				return new Promise<void>((resolve) => {
+					const next = z
+						.function()
+						.args()
+						.returns(z.void())
+						.implement(() => {
+							active++;
+							resolve();
+						});
+					queue.push(next);
+				});
+			});
+
+		const release = z
+			.function()
+			.args()
+			.returns(z.void())
+			.implement(() => {
+				active--;
+				const next = queue.shift();
+				if (next) {
+					next();
+				}
+			});
+
+		return { acquire, release };
+	});
+
 const fetchTextResource = z
 	.function()
 	.args(
 		z.string().url(),
 		z.number().int().positive(),
 		z.number().int().positive(),
-		z.record(z.string()).optional()
+		z.record(z.string()).optional(),
+		z.custom<Semaphore>().optional(),
+		z.string().optional()
 	)
 	.returns(
 		z.promise(
@@ -220,16 +287,42 @@ const fetchTextResource = z
 				.nullable()
 		)
 	)
-	.implement(async (url, timeoutMs, maxBytes, headers) => {
-		const response = await fetch(url, {
-			method: "GET",
-			headers,
-			signal: AbortSignal.timeout(timeoutMs),
-			redirect: "follow"
-		}).catch(() => null);
+	.implement(async (url, timeoutMs, maxBytes, headers, semaphore, allowedFinalHost) => {
+		const parsedUrl = new URL(url);
+		const hostname = parsedUrl.hostname.toLowerCase();
+		const isExplicitTarget = hostname === "localhost" || hostname.endsWith(".localhost") || isIP(hostname) !== 0;
+		if (!isExplicitTarget) {
+			const isSafe = await resolveAndCheckHost(parsedUrl.hostname);
+			if (!isSafe) return null;
+		}
+
+		if (semaphore) await semaphore.acquire();
+		let response: Response | null; // eslint-disable-line custom/no-mutable-variables
+		try {
+			response = await fetch(url, {
+				method: "GET",
+				headers,
+				signal: AbortSignal.timeout(timeoutMs),
+				redirect: "follow"
+			}).catch(() => null);
+		} finally {
+			if (semaphore) semaphore.release();
+		}
 
 		if (!response) {
 			return null;
+		}
+
+		if (allowedFinalHost) {
+			const finalHost = new URL(response.url).hostname.toLowerCase();
+			const normalizedAllowedHost = allowedFinalHost.toLowerCase();
+			const hostAllowed =
+				finalHost === normalizedAllowedHost ||
+				isSubdomainOf(finalHost, normalizedAllowedHost);
+
+			if (!hostAllowed) {
+				return null;
+			}
 		}
 
 		if (!response.ok && response.status !== 206) {
@@ -507,16 +600,50 @@ const parseHasSourcesContent = z
 
 const probeSourceMap = z
 	.function()
-	.args(z.custom<SourceMapRef>())
+	.args(z.custom<SourceMapRef>(), z.custom<Semaphore>().optional())
 	.returns(z.promise(z.custom<SourceMapProbe>()))
-	.implement(async (ref) => {
-		const response = await fetch(ref.url, {
-			method: "GET",
-			signal: AbortSignal.timeout(SOURCE_MAP_TIMEOUT_MS),
-			redirect: "follow"
-		}).catch(() => null);
+	.implement(async (ref, semaphore) => {
+		const mapParsedUrl = new URL(ref.url);
+		const hostname = mapParsedUrl.hostname.toLowerCase();
+		const isExplicitTarget = hostname === "localhost" || hostname.endsWith(".localhost") || isIP(hostname) !== 0;
+		const isSafe = isExplicitTarget || await resolveAndCheckHost(mapParsedUrl.hostname);
+
+		if (!isSafe) {
+			return {
+				scriptUrl: ref.scriptUrl,
+				mapUrl: ref.url,
+				discoveryMethod: ref.method,
+				isAccessible: false,
+				httpStatus: null,
+				hasSourcesContent: null
+			};
+		}
+
+		if (semaphore) await semaphore.acquire();
+		let response: Response | null; // eslint-disable-line custom/no-mutable-variables
+		try {
+			response = await fetch(ref.url, {
+				method: "GET",
+				signal: AbortSignal.timeout(SOURCE_MAP_TIMEOUT_MS),
+				redirect: "follow"
+			}).catch(() => null);
+		} finally {
+			if (semaphore) semaphore.release();
+		}
 
 		if (!response) {
+			return {
+				scriptUrl: ref.scriptUrl,
+				mapUrl: ref.url,
+				discoveryMethod: ref.method,
+				isAccessible: false,
+				httpStatus: null,
+				hasSourcesContent: null
+			};
+		}
+
+		const finalHost = new URL(response.url).hostname.toLowerCase();
+		if (finalHost !== hostname) {
 			return {
 				scriptUrl: ref.scriptUrl,
 				mapUrl: ref.url,
@@ -554,10 +681,13 @@ const toFailedResult = z
 	.args()
 	.returns(ScanDomainOutput)
 	.implement(() => {
+		const empty = getEmptyDiscoveryOutput();
 		return {
 			status: "failed",
 			checks: [],
-			findings: []
+			findings: [],
+			discoveredSubdomains: empty.subdomains,
+			discoveryStats: empty.stats
 		};
 	});
 
@@ -615,33 +745,47 @@ export const scanDomain = z
 			return toFailedResult();
 		}
 
+		const semaphore = createSemaphore(MAX_CONCURRENT_FETCHES);
+
+		const baseHost = new URL(targetUrl).hostname;
+
 		const homepage = await fetchTextResource(
 			targetUrl,
 			HOMEPAGE_TIMEOUT_MS,
 			HOMEPAGE_MAX_BYTES,
-			undefined
+			undefined,
+			semaphore,
+			baseHost
 		);
 
 		if (homepage === null) {
 			return toFailedResult();
 		}
 
-		if (!homepage.contentType.toLowerCase().includes("text/html")) {
-			return toFailedResult();
+		const skipDiscovery = shouldSkipDiscovery(baseHost);
+
+		let discovery: DiscoveryOutput; // eslint-disable-line custom/no-mutable-variables
+		if (skipDiscovery) {
+			discovery = getEmptyDiscoveryOutput();
+		} else {
+			discovery = await discoverSubdomainTargets(targetUrl, homepage.body);
 		}
 
-		if (!homepage.body.toLowerCase().includes("<script")) {
-			return toFailedResult();
-		}
+		const allScripts: { file: string; content: string; headers: Record<string, string> }[] = [];
+		const allSourceMapRefs: SourceMapRef[] = [];
 
-		const scriptUrls = extractScriptUrls(homepage.body, targetUrl);
-		const candidateScriptUrls = scriptUrls.slice(0, MAX_SCRIPT_CANDIDATES);
-		const scripts: { file: string; content: string; headers: Record<string, string> }[] = [];
+		const mainScriptUrls = extractScriptUrls(homepage.body, targetUrl);
+		const mainCandidates = mainScriptUrls.slice(0, MAX_SCRIPT_CANDIDATES);
 
-		for (const scriptUrl of candidateScriptUrls) {
-			const scriptResponse = await fetchTextResource(scriptUrl, SCRIPT_TIMEOUT_MS, SCRIPT_MAX_BYTES, {
-				Range: `bytes=0-${SCRIPT_MAX_BYTES - 1}`
-			});
+		for (const scriptUrl of mainCandidates) {
+			const scriptResponse = await fetchTextResource(
+				scriptUrl,
+				SCRIPT_TIMEOUT_MS,
+				SCRIPT_MAX_BYTES,
+				{ Range: `bytes=0-${SCRIPT_MAX_BYTES - 1}` },
+				semaphore,
+				baseHost
+			);
 
 			if (scriptResponse === null) {
 				continue;
@@ -651,16 +795,82 @@ export const scanDomain = z
 				continue;
 			}
 
-			scripts.push({
+			allScripts.push({
 				file: scriptUrl,
 				content: scriptResponse.body,
 				headers: scriptResponse.headers
 			});
 		}
 
-		const allSourceMapRefs: SourceMapRef[] = [];
+		for (const targetUrlStr of discovery.targets) {
+			const targetHost = new URL(targetUrlStr).hostname;
+			const targetResponse = await fetchTextResource(
+				targetUrlStr,
+				HOMEPAGE_TIMEOUT_MS,
+				HOMEPAGE_MAX_BYTES,
+				undefined,
+				semaphore,
+				targetHost
+			);
 
-		for (const script of scripts) {
+			if (targetResponse === null) {
+				continue;
+			}
+
+			if (!targetResponse.contentType.toLowerCase().includes("text/html")) {
+				continue;
+			}
+
+			if (!targetResponse.body.toLowerCase().includes("<script")) {
+				continue;
+			}
+
+			const targetScriptUrls = extractScriptUrls(targetResponse.body, targetUrlStr);
+			const targetCandidates = targetScriptUrls.slice(0, MAX_SCRIPT_CANDIDATES);
+
+			for (const scriptUrl of targetCandidates) {
+				const scriptResponse = await fetchTextResource(
+					scriptUrl,
+					SCRIPT_TIMEOUT_MS,
+					SCRIPT_MAX_BYTES,
+					{ Range: `bytes=0-${SCRIPT_MAX_BYTES - 1}` },
+					semaphore,
+					targetHost
+				);
+
+				if (scriptResponse === null) {
+					continue;
+				}
+
+				if (!isLikelyJavaScript(scriptUrl, scriptResponse.contentType)) {
+					continue;
+				}
+
+				allScripts.push({
+					file: scriptUrl,
+					content: scriptResponse.body,
+					headers: scriptResponse.headers
+				});
+			}
+		}
+
+		const seenScriptUrls = new Set<string>();
+		const dedupedScripts = allScripts.filter((script) => {
+			if (seenScriptUrls.has(script.file)) {
+				return false;
+			}
+			seenScriptUrls.add(script.file);
+			return true;
+		});
+
+		let truncated = discovery.stats.truncated; // eslint-disable-line custom/no-mutable-variables
+		let finalScripts = dedupedScripts; // eslint-disable-line custom/no-mutable-variables
+		if (finalScripts.length > MAX_TOTAL_SCRIPTS) {
+			finalScripts = finalScripts.slice(0, MAX_TOTAL_SCRIPTS);
+			truncated = true;
+		}
+
+		for (const script of finalScripts) {
 			const refs = extractSourceMapRefs(script.file, script.headers, script.content);
 			allSourceMapRefs.push(...refs);
 		}
@@ -670,21 +880,26 @@ export const scanDomain = z
 			if (seenMapUrls.has(ref.url)) {
 				return false;
 			}
-
 			seenMapUrls.add(ref.url);
 			return true;
 		});
 
+		let finalRefs = uniqueRefs; // eslint-disable-line custom/no-mutable-variables
+		if (finalRefs.length > MAX_TOTAL_SOURCE_MAPS) {
+			finalRefs = finalRefs.slice(0, MAX_TOTAL_SOURCE_MAPS);
+			truncated = true;
+		}
+
 		const sourceMapProbes: SourceMapProbe[] = [];
 
-		for (const ref of uniqueRefs) {
-			const probe = await probeSourceMap(ref);
+		for (const ref of finalRefs) {
+			const probe = await probeSourceMap(ref, semaphore);
 			sourceMapProbes.push(probe);
 		}
 
 		const checks = runChecks(
 			targetUrl,
-			scripts.map(({ file, content }) => ({ file, content })),
+			finalScripts.map(({ file, content }) => ({ file, content })),
 			builtinChecks,
 			sourceMapProbes
 		);
@@ -704,6 +919,11 @@ export const scanDomain = z
 		return {
 			status: "success",
 			checks,
-			findings
+			findings,
+			discoveredSubdomains: discovery.subdomains,
+			discoveryStats: {
+				...discovery.stats,
+				truncated
+			}
 		};
 	});

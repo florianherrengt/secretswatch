@@ -85,7 +85,11 @@ dedupeRoutes.post(
 				.update(scans)
 				.set({
 					status: pipelineResult.status,
-					finishedAt
+					finishedAt,
+					discoveryMetadata: {
+						discoveredSubdomains: pipelineResult.discoveredSubdomains,
+						stats: pipelineResult.discoveryStats
+					}
 				})
 				.where(eq(scans.id, scanRecord.id));
 

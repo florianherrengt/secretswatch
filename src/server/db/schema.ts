@@ -1,4 +1,4 @@
-import { index, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const scanStatusEnum = pgEnum("scan_status", [
 	"pending",
@@ -22,7 +22,17 @@ export const scans = pgTable("scans", {
 		.references(() => domains.id),
 	status: scanStatusEnum("status").notNull(),
 	startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }).notNull(),
-	finishedAt: timestamp("finished_at", { withTimezone: true, mode: "date" })
+	finishedAt: timestamp("finished_at", { withTimezone: true, mode: "date" }),
+	discoveryMetadata: jsonb("discovery_metadata").$type<{
+		discoveredSubdomains: string[];
+		stats: {
+			fromLinks: number;
+			fromSitemap: number;
+			totalConsidered: number;
+			totalAccepted: number;
+			truncated: boolean;
+		};
+	}>()
 });
 
 export const findings = pgTable(

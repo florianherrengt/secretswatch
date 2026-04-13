@@ -47,7 +47,15 @@ export const scanResultPagePropsSchema = z.object({
 	startedAtIso: z.string(),
 	finishedAtIso: z.string().nullable(),
 	durationMs: z.number().int().nonnegative(),
-	checks: z.array(scanResultCheckSchema)
+	checks: z.array(scanResultCheckSchema),
+	discoveredSubdomains: z.array(z.string()),
+	discoveryStats: z.object({
+		fromLinks: z.number().int().nonnegative(),
+		fromSitemap: z.number().int().nonnegative(),
+		totalConsidered: z.number().int().nonnegative(),
+		totalAccepted: z.number().int().nonnegative(),
+		truncated: z.boolean()
+	})
 });
 
 export type ScanResultPageProps = z.infer<typeof scanResultPagePropsSchema>;
@@ -545,6 +553,39 @@ export const ScanResultPage: FC<ScanResultPageProps> = z
 									<p class="font-medium text-foreground">Failed</p>
 									<p class="font-mono text-xs text-muted-foreground">{global.failedChecks}</p>
 								</div>
+								<div class="space-y-1">
+									<p class="font-medium text-foreground">Subdomains Scanned</p>
+									<p class="font-mono text-xs text-muted-foreground">{props.discoveredSubdomains.length}</p>
+								</div>
+								<div class="space-y-1">
+									<p class="font-medium text-foreground">Discovery</p>
+									<p class="font-mono text-xs text-muted-foreground">
+										{props.discoveryStats.fromLinks} links, {props.discoveryStats.fromSitemap} sitemap
+										{props.discoveryStats.truncated ? " (truncated)" : ""}
+									</p>
+								</div>
+							</div>
+							<div class="mt-4 space-y-2">
+								<div class="space-y-1">
+									<p class="text-sm font-medium text-foreground">Subdomains Scanned</p>
+									<p class="text-xs text-muted-foreground">Discovered Subdomains included in this scan run.</p>
+								</div>
+								{props.discoveredSubdomains.length > 0 ? (
+									<ul class="space-y-1">
+										{props.discoveredSubdomains.map((sub) => (
+											<li key={sub} class="font-mono text-xs text-muted-foreground break-words">
+												{sub}
+											</li>
+										))}
+									</ul>
+								) : (
+									<div class="space-y-1">
+										<p class="text-sm text-muted-foreground">No subdomains discovered</p>
+										<p class="text-xs text-muted-foreground">
+											Use Re-run Scan after deploying pages that expose subdomain links or sitemap entries.
+										</p>
+									</div>
+								)}
 							</div>
 						</ScanCard>
 					</Section>

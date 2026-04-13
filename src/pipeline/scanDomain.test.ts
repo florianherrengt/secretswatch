@@ -116,6 +116,30 @@ describe("scanDomain demo website", () => {
 		expect(result.findings).toHaveLength(0);
 	});
 
+	it("skips discovery for localhost and returns empty discovery fields", async () => {
+		const result = await scanDomain({ domain: `localhost:${TEST_PORT}/sandbox/demo` });
+
+		expect(result.status).toBe("success");
+		expect(result.discoveredSubdomains).toEqual([]);
+		expect(result.discoveryStats.fromLinks).toBe(0);
+		expect(result.discoveryStats.fromSitemap).toBe(0);
+		expect(result.discoveryStats.totalConsidered).toBe(0);
+		expect(result.discoveryStats.totalAccepted).toBe(0);
+		expect(result.discoveryStats.truncated).toBe(false);
+	});
+
+	it("returns empty discovery fields on failure", async () => {
+		const result = await scanDomain({ domain: "https://localhost:3310/sandbox/demo" });
+
+		expect(result.status).toBe("failed");
+		expect(result.discoveredSubdomains).toEqual([]);
+		expect(result.discoveryStats.fromLinks).toBe(0);
+		expect(result.discoveryStats.fromSitemap).toBe(0);
+		expect(result.discoveryStats.totalConsidered).toBe(0);
+		expect(result.discoveryStats.totalAccepted).toBe(0);
+		expect(result.discoveryStats.truncated).toBe(false);
+	});
+
 	it("continues running other checks if one check throws", () => {
 		const checks: ScanCheck[] = [
 			{
