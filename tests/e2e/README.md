@@ -30,7 +30,7 @@ test("authenticated UI page", async ({ authedPage }) => {
 
 ### Notes
 
-- The fixture helper uses `/debug/emails`, so it works in this repo's non-production e2e environment.
+- The fixture helper uses `/debug/emails`, so e2e runs with `DEBUG_ENDPOINT=true` in `playwright.config.ts`.
 - Prefer importing from `./fixtures/authed` for tests that need auth.
 - If a test is explicitly about auth behavior itself, call the lower-level helper in `tests/e2e/support/auth.ts` directly.
 

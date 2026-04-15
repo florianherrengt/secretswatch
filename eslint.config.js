@@ -30,6 +30,18 @@ export default [
       "custom/ds-no-direct-semantic-styling": "error",
       "custom/ds-no-unsafe-classname-construction": "error",
       "custom/ds-enforce-suppression-format": "error",
+
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "ClassDeclaration",
+          message: "Classes are not allowed. Use functional patterns instead.",
+        },
+        {
+          selector: "ClassExpression",
+          message: "Classes are not allowed. Use functional patterns instead.",
+        },
+      ],
     },
   },
 
@@ -37,6 +49,7 @@ export default [
     files: ["**/*.test.ts", "**/*.test.tsx"],
     rules: {
       "custom/no-raw-functions": "off",
+      "no-restricted-syntax": "off",
     },
   },
 

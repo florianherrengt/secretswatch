@@ -805,3 +805,17 @@ CI test runs no longer fail on missing relations when setup hooks touch persiste
 
 **Outcome:**
 All environments now run identical PostgreSQL 17.2 and Redis 7.2 versions, preventing subtle compatibility differences.
+
+---
+
+## v0.1.7 — Unified SMTP Email
+
+**Consolidated email delivery to a single generic SMTP provider, removing vendor-specific implementations.**
+
+- Replaced Resend SMTP and AWS SES providers with a single `SMTPEmailProvider` using standard `SMTP_HOST/PORT/USER/PASS` configuration
+- Removed `@aws-sdk/client-ses` dependency (79 packages removed)
+- Production requires SMTP credentials; development and test environments auto-fallback to `MockEmailProvider` which persists emails to the database for test assertions
+- Updated environment configuration to use `SMTP_*` variables instead of `RESEND_API_KEY`
+
+**Outcome:**
+Email delivery works with any SMTP provider (Resend, Mailgun, SendGrid, etc.) through a single generic interface, with zero-cost mocking for E2E tests.

@@ -1,5 +1,7 @@
 # AGENT.md
 
+For deployment and operations details, see `COOLIFY.md`.
+
 ## System Model
 
 - Server is the single source of truth
@@ -137,12 +139,77 @@ export function render<T>(
 
 ---
 
+## Interactive Clarification Protocol (`question`-First)
+
+When requirements are not fully deterministic, the agent MUST use the `question` tool to resolve ambiguity before acting.
+
+- Default to `question` over freeform asking when decisions can be structured
+- Ask in iterative rounds; keep asking until implementation-critical ambiguity is removed
+- Prefer concise, decision-oriented option sets
+- Keep custom answer enabled for missing options
+- Use `multiple: true` when multiple selections are valid
+- Do not silently assume when a `question` can resolve uncertainty
+
+Use `question` aggressively for:
+
+- Spec generation and spec review workflows
+- Scope boundaries and non-goals
+- Contract definitions (inputs/outputs, schemas, side effects)
+- Error handling and fallback behavior
+- Dependency and integration choices
+- Test expectations and acceptance criteria
+
+For spec-oriented tasks, target high clarification density (typically 8+ high-impact questions across rounds) unless the input is already explicit and unambiguous.
+
+---
+
 ## Tooling
 
 - Use `brave_*` for search
 - Use `cloudflare_get_url_markdown` for page retrieval
+- Use `context7_resolve-library-id` + `context7_query-docs` to look up library/framework documentation and code examples before writing code that depends on any library or framework
 - For open-source repository questions, prefer `zread` as the default research and answer path.
 - Analyze screenshots with `image_analysis`
+
+### Code Navigation (`lsp`)
+
+Use `lsp` operations to understand and navigate the codebase accurately:
+
+- `goToDefinition` — find where a symbol is defined before modifying it
+- `findReferences` — find all usages of a symbol before renaming or changing its interface
+- `hover` — get type info and documentation for unfamiliar symbols
+- `documentSymbol` — get an overview of all symbols in a file
+- `workspaceSymbol` — search for symbols across the entire workspace
+
+Always use `lsp` over grep/glob when you need precise symbol information. Prefer `lsp` before editing to understand the full impact of a change.
+
+### Code Search (`codesearch`)
+
+Use `codesearch` (Exa Code API) to find high-quality code examples and patterns:
+
+- When you need idiomatic usage patterns for a library or framework
+- When looking for specific API usage examples
+- When exploring unfamiliar SDKs or integration patterns
+
+### Task Delegation (`task`)
+
+Use `task` to delegate work to sub-agents:
+
+- `explore` — fast codebase exploration (finding files, searching code, answering questions about the codebase)
+- `general` — complex multi-step tasks that benefit from parallel execution
+- Use `task` when work can be decomposed into independent parallel units
+- Use `task` for large-scale searches or when you need to explore multiple areas of the codebase simultaneously
+
+### Task Tracking (`todowrite`)
+
+Use `todowrite` to track progress on multi-step tasks:
+
+- Use it when a task requires **3 or more distinct steps** or involves multiple files/components
+- Mark tasks `in_progress` one at a time — never have multiple tasks active simultaneously
+- Mark tasks `completed` immediately after finishing — do not batch completions
+- Cancel tasks that become irrelevant as understanding evolves
+- Update the list as new subtasks are discovered during implementation
+- Do not use `todowrite` for trivial single-step tasks
 
 ### Screenshot Validation Flow
 

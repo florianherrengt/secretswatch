@@ -10,6 +10,8 @@ You are simply **having a thorough clarification conversation**.
 
 Go through the spec and **ask all the questions that would need answering** so that implementation can proceed without guesswork.
 
+This is an interactive clarification workflow. Use the `question` tool as your primary mechanism.
+
 ---
 
 ## How to Approach
@@ -22,6 +24,9 @@ Go through the spec and **ask all the questions that would need answering** so t
   - ambiguous
   - inconsistent
   - missing edge cases
+- Ask clarification questions using `question` in iterative rounds
+- Do not end after one round if there are unresolved ambiguities
+- Ask at least one meaningful `question` block per major spec section with uncertainty
 
 ---
 
@@ -33,6 +38,12 @@ Go through the spec and **ask all the questions that would need answering** so t
 - Don’t overwhelm with noise—prioritize meaningful gaps
 - Still ask “obvious” questions if they affect implementation clarity
 - Do not propose solutions. Only ask.
+- Prefer structured multiple-choice options in `question`
+- Keep custom answers enabled for constraints you did not anticipate
+- Use `multiple: true` when multiple choices can be valid simultaneously
+- If an answer is ambiguous, follow up with another `question` immediately
+
+`question` usage is required whenever a meaningful clarification can be made explicit.
 
 ---
 
@@ -62,3 +73,9 @@ Write like a teammate reviewing a spec:
 - Ask clear, direct questions
 - Avoid rigid templates
 - Keep it flowing and readable
+- Use `question` frequently enough that decisions are captured, not inferred
+
+Do not conclude the review until either:
+
+- all implementation-blocking ambiguities are resolved through `question`, or
+- unresolved items are explicitly acknowledged as open risks by the user.

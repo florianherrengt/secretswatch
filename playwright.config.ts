@@ -28,7 +28,9 @@ export default defineConfig({
 		env: {
 			...process.env,
 			PORT: String(port),
-			DOMAIN: domain
+			DOMAIN: domain,
+			DEBUG_ENDPOINT: "true",
+			RESEND_API_KEY: ""
 		}
 	}
 });

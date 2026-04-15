@@ -26,6 +26,7 @@ const endpointRateLimitWindowSeconds = Math.round(
 	Number(process.env.ENDPOINT_RATE_LIMIT_WINDOW_MS ?? "60000") / 1000
 );
 const endpointRateLimitMaxRequests = Number(process.env.ENDPOINT_RATE_LIMIT_MAX_REQUESTS ?? "120");
+const isDebugEndpointEnabled = (process.env.DEBUG_ENDPOINT ?? "").toLowerCase() === "true";
 
 const endpointRateLimiter = new RateLimiterRedis({
 	storeClient: ioredisClient,
@@ -74,7 +75,7 @@ app.route("/dedupe", dedupeRoutes);
 app.route("/source", sourceRoutes);
 app.route("/admin", adminRoutes);
 
-if (process.env.NODE_ENV !== "production") {
+if (isDebugEndpointEnabled) {
 	app.route("/debug", debugRoutes);
 }
 
