@@ -780,3 +780,15 @@ Container/image deployments that only provide `DATABASE_URL` now self-initialize
 
 **Outcome:**
 CI now provisions required runtime services for migration-on-boot behavior, allowing smoke tests to validate real startup conditions instead of failing on missing infrastructure.
+
+---
+
+## v0.1.5 — CI Migration Bootstrap
+
+**Ensured test jobs prepare database schema before executing integration-aware suites.**
+
+- Added an explicit migration step to the CI workflow after dependency installation
+- Kept PostgreSQL/Redis service wiring intact while ensuring test tables exist before lint/test phases
+
+**Outcome:**
+CI test runs no longer fail on missing relations when setup hooks touch persisted tables, bringing hosted runs in line with local pre-commit behavior.
