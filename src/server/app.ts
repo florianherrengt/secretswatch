@@ -6,14 +6,9 @@ import { serve } from "@hono/node-server";
 import indexRoutes from "./routes/index.js";
 import { startScanWorker } from "./scan/scanWorker.js";
 import { registerHourlyScheduler, startSchedulerWorker } from "./scheduler/schedulerQueue.js";
+import { runMigrations } from "./db/migrate.js";
 
 const app = new Hono();
-
-if (process.env.NODE_ENV !== "test") {
-	startScanWorker();
-	startSchedulerWorker();
-	void registerHourlyScheduler();
-}
 
 app.route("/", indexRoutes);
 
@@ -41,13 +36,38 @@ app.notFound(
 const port = Number(process.env.PORT) || 3000;
 const domain = z.string().min(1).parse(process.env.DOMAIN ?? `localhost:${port}`);
 
-serve(
-	{ fetch: app.fetch, port },
+const boot = z
+	.function()
+	.args()
+	.returns(z.promise(z.void()))
+	.implement(async () => {
+		await runMigrations();
+
+		if (process.env.NODE_ENV !== "test") {
+			startScanWorker();
+			startSchedulerWorker();
+			void registerHourlyScheduler();
+		}
+
+		serve(
+			{ fetch: app.fetch, port },
+			z
+				.function()
+				.args()
+				.returns(z.void())
+				.implement(() => {
+					console.log(`Server running on http://${domain}`);
+				})
+		);
+	});
+
+void boot().catch(
 	z
 		.function()
-		.args()
-		.returns(z.void())
-		.implement(() => {
-			console.log(`Server running on http://${domain}`);
+		.args(z.instanceof(Error))
+		.returns(z.never())
+		.implement((error) => {
+			console.error("Failed to start server:", error);
+			process.exit(1);
 		})
 );

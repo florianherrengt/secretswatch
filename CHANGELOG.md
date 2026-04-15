@@ -752,3 +752,17 @@ Every merge to master or main produces a verified, multi-arch production image o
 
 **Outcome:**
 CI pipeline now passes all 243 tests reliably with proper service dependencies.
+
+---
+
+## v0.1.3 — Automatic DB Migrations on Boot
+
+**Ensured fresh deployments can initialize schema automatically at app startup.**
+
+- Added startup migration execution using Drizzle migrator before server bind
+- Added a dedicated migration bootstrap module so runtime uses checked-in SQL migrations from `drizzle/`
+- Ordered boot sequence so workers and scheduler start only after migrations complete successfully
+- Added explicit startup failure handling to exit process when migration step fails
+
+**Outcome:**
+Container/image deployments that only provide `DATABASE_URL` now self-initialize schema on first boot instead of failing on missing tables.
