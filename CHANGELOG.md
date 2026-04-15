@@ -766,3 +766,17 @@ CI pipeline now passes all 243 tests reliably with proper service dependencies.
 
 **Outcome:**
 Container/image deployments that only provide `DATABASE_URL` now self-initialize schema on first boot instead of failing on missing tables.
+
+---
+
+## v0.1.4 — CI Service Wiring for Startup Migrations
+
+**Aligned GitHub Actions checks with runtime dependencies introduced by startup database migrations.**
+
+- Fixed CI workflow structure by restoring top-level `jobs` mapping so workflow runs execute normally
+- Added PostgreSQL and Redis service containers to Docker publish smoke tests
+- Updated smoke-test container networking to reach service containers via host gateway mapping
+- Kept Docker smoke validation contract intact (health endpoint + non-root runtime check)
+
+**Outcome:**
+CI now provisions required runtime services for migration-on-boot behavior, allowing smoke tests to validate real startup conditions instead of failing on missing infrastructure.
