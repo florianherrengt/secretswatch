@@ -848,3 +848,19 @@ E2E tests run automatically on every push and pull request with rate limiting di
 
 **Outcome:**
 All e2e tests now pass on CI, reflecting the current UI structure.
+
+---
+
+## v0.1.10 — Docs Consolidation & Date Formatting
+
+**Reorganized project documentation and added date formatting utility.**
+
+- Moved root-level markdown files (COOLIFY, DESIGN_SYSTEM_ENFORCEMENT, SOURCES, UI_EXECUTION_CONTRACT) into `docs/` directory
+- Condensed AGENT.md to serve as index referencing new doc guides
+- Added `docs/architecture.md`, `docs/protocols.md`, `docs/tooling.md`, `docs/design-system.md`
+- Added `formatDate` view helper with unit tests
+- Added e2e test for scan dates
+- Added planning-mode opencode command and ci-watch skill
+
+**Outcome:**
+Project documentation is consolidated under `docs/` with AGENT.md as a concise entry point. Date formatting is consistent across views.

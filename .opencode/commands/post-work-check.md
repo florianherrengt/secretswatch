@@ -17,7 +17,7 @@ Review the completed implementation strictly against the following criteria. Be 
 
 ---
 
-### 2. UI Compliance (`UI_EXECUTION_CONTRACT.md`)
+### 2. UI Compliance (`docs/design-system.md`)
 
 - Verify that all UI changes:
   - Follow the defined design system and constraints
