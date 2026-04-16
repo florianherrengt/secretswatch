@@ -98,6 +98,7 @@ jobs:
       ADMIN_BASIC_AUTH_PASSWORD: changeme
       DEBUG_ENDPOINT: true
       RESEND_API_KEY: ""
+      RATE_LIMIT_DISABLED: true
 
     steps:
       - name: Checkout

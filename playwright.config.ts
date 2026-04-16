@@ -21,16 +21,17 @@ export default defineConfig({
 			}
 		}
 	],
-	webServer: {
-		command: "npm run test:e2e:serve",
-		url: baseURL,
-		reuseExistingServer: !process.env.CI,
-		env: {
-			...process.env,
-			PORT: String(port),
-			DOMAIN: domain,
-			DEBUG_ENDPOINT: "true",
-			RESEND_API_KEY: ""
+		webServer: {
+			command: "npm run test:e2e:serve",
+			url: baseURL,
+			reuseExistingServer: !process.env.CI,
+			env: {
+				...process.env,
+				PORT: String(port),
+				DOMAIN: domain,
+				DEBUG_ENDPOINT: "true",
+				RESEND_API_KEY: "",
+				RATE_LIMIT_DISABLED: "true"
+			}
 		}
-	}
 });

@@ -27,6 +27,7 @@ const endpointRateLimitWindowSeconds = Math.round(
 );
 const endpointRateLimitMaxRequests = Number(process.env.ENDPOINT_RATE_LIMIT_MAX_REQUESTS ?? "120");
 const isDebugEndpointEnabled = (process.env.DEBUG_ENDPOINT ?? "").toLowerCase() === "true";
+const isRateLimitDisabled = (process.env.RATE_LIMIT_DISABLED ?? "").toLowerCase() === "true";
 
 const endpointRateLimiter = new RateLimiterRedis({
 	storeClient: ioredisClient,
@@ -45,7 +46,7 @@ app.use(
 		.args(z.custom<Context>(), z.custom<() => Promise<void>>())
 		.returns(z.custom<Promise<Response | void>>())
 		.implement(async (c, next) => {
-			if (c.req.path === "/healthz") {
+			if (c.req.path === "/healthz" || isRateLimitDisabled) {
 				await next();
 				return;
 			}

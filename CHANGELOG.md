@@ -831,6 +831,7 @@ Email delivery works with any SMTP provider (Resend, Mailgun, SendGrid, etc.) th
 - Runs database migrations and builds the app before executing tests
 - Uploads test artifacts (traces, screenshots) on failure with 7-day retention
 - Uses debug email endpoint for magic link authentication tests
+- Added `RATE_LIMIT_DISABLED` env var to bypass rate limiting in e2e environments
 
 **Outcome:**
-E2E tests run automatically on every push and pull request, catching regressions in authentication flows, security, and UI behavior.
+E2E tests run automatically on every push and pull request with rate limiting disabled, catching regressions in authentication flows, security, and UI behavior.
