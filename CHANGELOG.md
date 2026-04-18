@@ -2,7 +2,7 @@
 
 ## v0.1.12 — Localized Scan Result Timestamps
 
-Render scan result dates using `<time datetime>` elements reformatted client-side via browser Intl APIs. Server renders UTC dates, then `format-local-dates.js` localizes them on page load. Works on first visit without cookies.
+Render scan result dates using `<time datetime>` elements reformatted client-side via browser Intl APIs. Server renders UTC dates, then `format-local-dates.js` (loaded at end of `<body>`) localizes them on page load. Works on first visit without cookies.
 
 ---
 
