@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { describe, it, expect, afterEach, beforeAll } from "vitest";
-import { ioredisClient } from "../scan/redis.js";
+import { describe, it, expect, afterEach } from "vitest";
 import { generateConfirmToken, peekConfirmToken, consumeConfirmToken, confirmActionConfig } from "./confirmActions.js";
 import { clearConfirmTokens } from "../db/confirmTokenStore.js";
 import {
@@ -11,11 +10,6 @@ import {
 } from "../db/confirmTokenTestUtils.js";
 
 describe("confirmActions", () => {
-	beforeAll(async () => {
-		if (ioredisClient.status !== "ready") {
-			await new Promise<void>((resolve) => ioredisClient.once("ready", () => resolve()));
-		}
-	});
 	const userId = randomUUID();
 	const otherUserId = randomUUID();
 

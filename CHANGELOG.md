@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.1.11 — Global Vitest Redis Setup
+
+Added `vitest.setup.ts` to wait for Redis readiness before any test runs, removing per-file workarounds.
+
+---
+
 ## v0.1.10 — Docs Consolidation & Date Formatting
 
 Moved project docs under `docs/`, condensed AGENT.md to an index, added `formatDate` helper with tests.
