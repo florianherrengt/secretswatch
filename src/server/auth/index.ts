@@ -165,6 +165,8 @@ export const deleteAccount = z
       const userDomainRows = await tx.select({ domain: userDomains.domain }).from(userDomains).where(eq(userDomains.userId, userId));
       const hostnames = userDomainRows.map((r) => r.domain);
 
+      // userDomains rows are cascade-deleted with the user, but the domains table has no FK to users.
+      // We must manually clean up domains that no other user references to avoid orphans.
       if (hostnames.length > 0) {
         const domainRows = await tx.select({ id: domains.id, hostname: domains.hostname }).from(domains).where(inArray(domains.hostname, hostnames));
 
