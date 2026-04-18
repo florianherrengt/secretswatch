@@ -309,9 +309,6 @@ scanRoutes.get(
 				: 0;
 
 			const discoveryMetadata = scanRecord.discoveryMetadata;
-			const cookieHeader = c.req.header("cookie") ?? "";
-			const cookieTz = cookieHeader.split(";").map((c) => c.trim()).find((c) => c.startsWith("tz="))?.slice(3);
-			const cookieLocale = cookieHeader.split(";").map((c) => c.trim()).find((c) => c.startsWith("locale="))?.slice(7);
 			const viewProps = scanResultPagePropsSchema.parse({
 				scanId: scanRecord.id,
 				targetUrl: domainRecord.hostname,
@@ -329,9 +326,7 @@ scanRoutes.get(
 					totalConsidered: 0,
 					totalAccepted: 0,
 					truncated: false
-				},
-				timezone: cookieTz || "UTC",
-				locale: cookieLocale || "en"
+				}
 			});
 
 			return c.html(render(ScanResultPage, viewProps));

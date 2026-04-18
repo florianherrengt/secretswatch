@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { FC } from "hono/jsx";
-import {
+import type { FC } from "hono/jsx";import {
 	checkClassificationById,
 	classificationFallback,
 	defaultSeverityLevelByCheckId,
@@ -13,7 +12,6 @@ import { ScanCard } from "../components/ScanCard.js";
 import { Section } from "../components/Section.js";
 import { SkeletonList } from "../components/SkeletonList.js";
 import { StatusBadge } from "../components/StatusBadge.js";
-import { formatTimestamp } from "../lib/formatDate.js";
 import { Layout } from "../layout.js";
 
 const findingSeveritySchema = z.enum(["critical", "high", "medium", "low", "info"]);
@@ -62,9 +60,7 @@ export const scanResultPagePropsSchema = z.object({
 		totalConsidered: z.number().int().nonnegative(),
 		totalAccepted: z.number().int().nonnegative(),
 		truncated: z.boolean()
-	}),
-	timezone: z.string().default("UTC"),
-	locale: z.string().default("en")
+	})
 });
 
 export type ScanResultPageProps = z.infer<typeof scanResultPagePropsSchema>;
@@ -92,25 +88,35 @@ const resolvedSeverityRankByLevel = {
 	None: 0
 } as const satisfies Record<DerivedSeverityLevel, number>;
 
-	const formatTimestampLocal = z
+const formatTimestampUtc = z
 	.function()
-	.args(z.string(), z.string(), z.string())
+	.args(z.string())
 	.returns(z.string())
-	.implement((isoValue, timezone, locale) => {
-		try {
-			const formatted = formatTimestamp(isoValue, timezone, locale);
-			const date = new Date(isoValue);
-			const offsetFormatter = new Intl.DateTimeFormat("en-US", {
-				timeZone: timezone,
-				timeZoneName: "shortOffset"
-			});
-			const offsetPart = offsetFormatter.formatToParts(date).find((p) => p.type === "timeZoneName");
-			const rawOffset = offsetPart?.value?.replace(/^GMT/, "") ?? "";
-			const offset = rawOffset === "" || rawOffset === "+0" || rawOffset === "-0" ? "+00:00" : rawOffset.includes(":") ? rawOffset : rawOffset.replace(/([+-])(\d+)/, (_, sign, hours) => sign + hours.padStart(2, "0") + ":00");
-			return formatted + " (" + offset + ")";
-		} catch {
+	.implement((isoValue) => {
+		const parsedDate = new Date(isoValue);
+
+		if (Number.isNaN(parsedDate.getTime())) {
 			return isoValue;
 		}
+
+		const year = String(parsedDate.getUTCFullYear()).padStart(4, "0");
+		const month = String(parsedDate.getUTCMonth() + 1).padStart(2, "0");
+		const day = String(parsedDate.getUTCDate()).padStart(2, "0");
+		const hour = String(parsedDate.getUTCHours()).padStart(2, "0");
+		const minute = String(parsedDate.getUTCMinutes()).padStart(2, "0");
+		const second = String(parsedDate.getUTCSeconds()).padStart(2, "0");
+
+		return `${year}-${month}-${day} ${hour}:${minute}:${second} UTC`;
+	});
+
+const LocalizedTime: FC<{ datetime: string }> = z
+	.function()
+	.args(z.custom<{ datetime: string }>())
+	.returns(z.custom<ReturnType<FC<{ datetime: string }>>>())
+	.implement(({ datetime }) => {
+		/* eslint-disable custom/ds-no-raw-html-elements -- ds-exception: UI-103 */
+		return <time datetime={datetime}>{formatTimestampUtc(datetime)}</time>;
+		/* eslint-enable custom/ds-no-raw-html-elements */
 	});
 
 export const formatDurationMs = z
@@ -411,7 +417,7 @@ export const ScanResultPage: FC<ScanResultPageProps> = z
 									</div>
 									<div class="space-y-1">
 										<p class="font-medium text-foreground">Started</p>
-										<p class="font-mono text-xs text-muted-foreground">{formatTimestampLocal(props.startedAtIso, props.timezone, props.locale)}</p>
+										<p class="font-mono text-xs text-muted-foreground"><LocalizedTime datetime={props.startedAtIso} /></p>
 									</div>
 								</div>
 							</ScanCard>
@@ -464,7 +470,7 @@ export const ScanResultPage: FC<ScanResultPageProps> = z
 									</div>
 									<div class="space-y-1">
 										<p class="font-medium text-foreground">Started</p>
-										<p class="font-mono text-xs text-muted-foreground">{formatTimestampLocal(props.startedAtIso, props.timezone, props.locale)}</p>
+										<p class="font-mono text-xs text-muted-foreground"><LocalizedTime datetime={props.startedAtIso} /></p>
 									</div>
 								</div>
 							</ScanCard>
@@ -544,7 +550,7 @@ export const ScanResultPage: FC<ScanResultPageProps> = z
 								</div>
 								<div class="space-y-1">
 									<p class="font-medium text-foreground">Started</p>
-									<p class="font-mono text-xs text-muted-foreground">{formatTimestampLocal(props.startedAtIso, props.timezone, props.locale)}</p>
+									<p class="font-mono text-xs text-muted-foreground"><LocalizedTime datetime={props.startedAtIso} /></p>
 								</div>
 								<div class="space-y-1">
 									<p class="font-medium text-foreground">Duration</p>
@@ -653,7 +659,7 @@ export const ScanResultPage: FC<ScanResultPageProps> = z
 																<div class="flex items-center justify-between gap-3">
 																	<p class="text-sm font-medium text-foreground">Finding #{findingIndex + 1}</p>
 																	{finding.detectedAt ? (
-																		<p class="font-mono text-xs text-muted-foreground">{formatTimestampLocal(finding.detectedAt!, props.timezone, props.locale)}</p>
+																		<p class="font-mono text-xs text-muted-foreground"><LocalizedTime datetime={finding.detectedAt} /></p>
 																	) : null}
 																</div>
 																<p class="text-sm text-foreground">{finding.title}</p>
