@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased
+
+Refactor: use Hono context variables instead of AuthContext casts. Replaces `(c as AuthContext).user` type assertions with `c.get('user')` / `c.set('user', ...)` throughout the codebase, eliminating unsafe casts.
+
+---
+
 ## v0.1.14 — Fix Debug Page E2E Timeout
 
 Decoupled debug page rendering from external API calls. GET now only pre-fills the form and renders immediately; POST triggers the actual fetch. Prevents Playwright timeouts when external sources (crt.sh) are slow.
