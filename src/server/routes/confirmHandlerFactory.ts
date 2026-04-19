@@ -1,20 +1,25 @@
-import { z } from "zod";
-import type { Context } from "hono";
-import { render } from "../../lib/response.js";
-import { confirmPagePropsSchema, ConfirmPage } from "../../views/pages/confirm.js";
-import { confirmQuerySchema, resolveConfirmTokenForDisplay } from "./confirmQuerySchema.js";
-import { consumeConfirmToken, type ConfirmAction } from "./confirmActions.js";
-import { type AuthContext } from "../auth/middleware.js";
+import { z } from 'zod';
+import type { Context } from 'hono';
+import { render } from '../../lib/response.js';
+import { confirmPagePropsSchema, ConfirmPage } from '../../views/pages/confirm.js';
+import { confirmQuerySchema, resolveConfirmTokenForDisplay } from './confirmQuerySchema.js';
+import { consumeConfirmToken, type ConfirmAction } from './confirmActions.js';
+import { type AuthContext } from '../auth/middleware.js';
 
-type ActionHandler = (c: Context, resolved: { action: ConfirmAction; context: Record<string, string> }) => Promise<Response>;
+type ActionHandler = (
+	c: Context,
+	resolved: { action: ConfirmAction; context: Record<string, string> },
+) => Promise<Response>;
 
 export const createConfirmHandlers = z
 	.function()
 	.args(z.string(), z.record(z.string(), z.custom<ActionHandler>()))
-	.returns(z.object({
-		getConfirmHandler: z.custom(),
-		postConfirmHandler: z.custom()
-	}))
+	.returns(
+		z.object({
+			getConfirmHandler: z.custom(),
+			postConfirmHandler: z.custom(),
+		}),
+	)
 	.implement((basePath, actionHandlers) => {
 		const getConfirmHandler = z
 			.function()
@@ -24,13 +29,13 @@ export const createConfirmHandlers = z
 				const parsedQuery = confirmQuerySchema.safeParse(c.req.query());
 
 				if (!parsedQuery.success) {
-					return c.html("<h1>Bad Request</h1><p>Invalid confirmation request.</p>", 400);
+					return c.html('<h1>Bad Request</h1><p>Invalid confirmation request.</p>', 400);
 				}
 
 				const resolved = await resolveConfirmTokenForDisplay(parsedQuery.data.token);
 
 				if (!resolved) {
-					return c.html("<h1>Bad Request</h1><p>Invalid or expired confirmation token.</p>", 400);
+					return c.html('<h1>Bad Request</h1><p>Invalid or expired confirmation token.</p>', 400);
 				}
 
 				const viewProps = confirmPagePropsSchema.parse({
@@ -39,7 +44,7 @@ export const createConfirmHandlers = z
 					confirmAction: `${basePath}/confirm?token=${parsedQuery.data.token}`,
 					cancelHref: parsedQuery.data.back ?? basePath,
 					confirmLabel: resolved.config.confirmLabel,
-					cancelLabel: resolved.config.cancelLabel
+					cancelLabel: resolved.config.cancelLabel,
 				});
 
 				return c.html(render(ConfirmPage, viewProps));
@@ -53,19 +58,19 @@ export const createConfirmHandlers = z
 				const user = (c as AuthContext).user;
 
 				if (!user) {
-					return c.json({ error: "Authentication required" }, 401);
+					return c.json({ error: 'Authentication required' }, 401);
 				}
 
-				const token = c.req.query("token");
+				const token = c.req.query('token');
 
 				if (!token) {
-					return c.html("<h1>Bad Request</h1><p>Missing confirmation token.</p>", 400);
+					return c.html('<h1>Bad Request</h1><p>Missing confirmation token.</p>', 400);
 				}
 
 				const resolved = await consumeConfirmToken(token, user.userId);
 
 				if (!resolved) {
-					return c.html("<h1>Bad Request</h1><p>Invalid or expired confirmation token.</p>", 400);
+					return c.html('<h1>Bad Request</h1><p>Invalid or expired confirmation token.</p>', 400);
 				}
 
 				const handler = actionHandlers[resolved.action];
@@ -74,7 +79,7 @@ export const createConfirmHandlers = z
 					return handler(c, resolved);
 				}
 
-				return c.html("<h1>Bad Request</h1><p>Unknown action.</p>", 400);
+				return c.html('<h1>Bad Request</h1><p>Unknown action.</p>', 400);
 			});
 
 		return { getConfirmHandler, postConfirmHandler };

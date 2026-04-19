@@ -1,18 +1,18 @@
-import { z } from "zod";
-import { Hono } from "hono";
-import type { Context } from "hono";
+import { z } from 'zod';
+import { Hono } from 'hono';
+import type { Context } from 'hono';
 
 const healthzRoutes = new Hono();
 
 healthzRoutes.get(
-	"/healthz",
+	'/healthz',
 	z
 		.function()
 		.args(z.custom<Context>())
 		.returns(z.instanceof(Response))
 		.implement((c) => {
-			return c.json({ status: "ok" });
-		})
+			return c.json({ status: 'ok' });
+		}),
 );
 
 export default healthzRoutes;

@@ -1,8 +1,8 @@
-import { checkDefinitionSchema } from "../../contracts.js";
+import { checkDefinitionSchema } from '../../contracts.js';
 
 export const missingSitemapCheckMetadata = checkDefinitionSchema.parse({
-	id: "missing-sitemap",
-	name: "Missing Sitemap",
+	id: 'missing-sitemap',
+	name: 'Missing Sitemap',
 	description:
-		"Detects when a domain does not expose a sitemap.xml file, which can impact SEO and site discoverability."
+		'Detects when a domain does not expose a sitemap.xml file, which can impact SEO and site discoverability.',
 });

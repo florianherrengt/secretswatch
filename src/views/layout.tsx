@@ -1,11 +1,11 @@
-import { z } from "zod";
-import type { FC, PropsWithChildren } from "hono/jsx";
-import { AuthNavActions } from "./components/AuthNavActions.js";
+import { z } from 'zod';
+import type { FC, PropsWithChildren } from 'hono/jsx';
+import { AuthNavActions } from './components/AuthNavActions.js';
 
 type LayoutProps = PropsWithChildren<{
 	title: string;
 	autoRefreshSeconds?: number;
-	topNavMode?: "auth" | "app";
+	topNavMode?: 'auth' | 'app';
 }>;
 
 export const Layout: FC<LayoutProps> = z
@@ -13,14 +13,14 @@ export const Layout: FC<LayoutProps> = z
 	.args(z.custom<LayoutProps>())
 	.returns(z.custom<ReturnType<FC<LayoutProps>>>())
 	.implement(({ title, children, autoRefreshSeconds, topNavMode }) => {
-		const navMode = topNavMode ?? "auth";
+		const navMode = topNavMode ?? 'auth';
 
 		return (
 			<html lang="en">
 				<head>
 					<meta charset="utf-8" />
 					<meta name="viewport" content="width=device-width, initial-scale=1" />
-					{typeof autoRefreshSeconds === "number" && autoRefreshSeconds > 0 ? (
+					{typeof autoRefreshSeconds === 'number' && autoRefreshSeconds > 0 ? (
 						<meta http-equiv="refresh" content={String(autoRefreshSeconds)} />
 					) : null}
 					<title>{title} | Secret Detector</title>

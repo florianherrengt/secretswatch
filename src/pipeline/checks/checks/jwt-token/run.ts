@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { checkRunInputSchema, checkRunOutputSchema } from "../../contracts.js";
-import { mapDetectionsToFindings } from "../../shared/detection.js";
-import { dedupeFindings } from "../../shared/dedupe.js";
-import { findJwtDetections } from "./detector.js";
+import { z } from 'zod';
+import { checkRunInputSchema, checkRunOutputSchema } from '../../contracts.js';
+import { mapDetectionsToFindings } from '../../shared/detection.js';
+import { dedupeFindings } from '../../shared/dedupe.js';
+import { findJwtDetections } from './detector.js';
 
 export const runJwtCheck = z
 	.function()
@@ -10,10 +10,14 @@ export const runJwtCheck = z
 	.returns(checkRunOutputSchema)
 	.implement((input) => {
 		const findings = input.scripts.flatMap((script) => {
-			return mapDetectionsToFindings(script.file, script.content, findJwtDetections(script.content));
+			return mapDetectionsToFindings(
+				script.file,
+				script.content,
+				findJwtDetections(script.content),
+			);
 		});
 
 		return {
-			findings: dedupeFindings(findings)
+			findings: dedupeFindings(findings),
 		};
 	});

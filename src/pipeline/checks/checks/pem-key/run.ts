@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { checkRunInputSchema, checkRunOutputSchema } from "../../contracts.js";
-import { mapDetectionsToFindings } from "../../shared/detection.js";
-import { dedupeFindings } from "../../shared/dedupe.js";
-import { findPemDetections } from "./detector.js";
+import { z } from 'zod';
+import { checkRunInputSchema, checkRunOutputSchema } from '../../contracts.js';
+import { mapDetectionsToFindings } from '../../shared/detection.js';
+import { dedupeFindings } from '../../shared/dedupe.js';
+import { findPemDetections } from './detector.js';
 
 export const runPemKeyCheck = z
 	.function()
@@ -10,10 +10,14 @@ export const runPemKeyCheck = z
 	.returns(checkRunOutputSchema)
 	.implement((input) => {
 		const findings = input.scripts.flatMap((script) => {
-			return mapDetectionsToFindings(script.file, script.content, findPemDetections(script.content));
+			return mapDetectionsToFindings(
+				script.file,
+				script.content,
+				findPemDetections(script.content),
+			);
 		});
 
 		return {
-			findings: dedupeFindings(findings)
+			findings: dedupeFindings(findings),
 		};
 	});

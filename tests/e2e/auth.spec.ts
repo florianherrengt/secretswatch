@@ -1,172 +1,177 @@
-import { expect, test } from "@playwright/test";
-import { createAuthenticatedSession } from "./support/auth";
+import { expect, test } from '@playwright/test';
+import { createAuthenticatedSession } from './support/auth';
 
-const domain = process.env.DOMAIN ?? "127.0.0.1:3000";
+const domain = process.env.DOMAIN ?? '127.0.0.1:3000';
 
 const baseUrl = `http://${domain}`;
 
 interface MockEmail {
-  to: string;
-  subject: string;
-  html: string;
-  createdAt: string;
+	to: string;
+	subject: string;
+	html: string;
+	createdAt: string;
 }
 
-test.describe("Magic Link Authentication", () => {
-  test("complete magic link auth flow", async ({ request }) => {
-    const timestamp = Date.now();
-    const testEmail = `test-${timestamp}@example.com`;
+test.describe('Magic Link Authentication', () => {
+	test('complete magic link auth flow', async ({ request }) => {
+		const timestamp = Date.now();
+		const testEmail = `test-${timestamp}@example.com`;
 
-    await test.step("Step 1: Request magic link", async () => {
-      const response = await request.post(`${baseUrl}/auth/request-link`, {
-        headers: { "Content-Type": "application/json" },
-        data: { email: testEmail }
-      });
+		await test.step('Step 1: Request magic link', async () => {
+			const response = await request.post(`${baseUrl}/auth/request-link`, {
+				headers: { 'Content-Type': 'application/json' },
+				data: { email: testEmail },
+			});
 
-      expect(response.status()).toBe(200);
-      const body = await response.json();
-      expect(body).toEqual({ success: true });
-    });
+			expect(response.status()).toBe(200);
+			const body = await response.json();
+			expect(body).toEqual({ success: true });
+		});
 
-    let magicLink: string | null = null; // eslint-disable-line custom/no-mutable-variables
+		let magicLink: string | null = null; // eslint-disable-line custom/no-mutable-variables
 
-    await test.step("Step 2: Retrieve mock email", async () => {
-      const response = await request.get(`${baseUrl}/debug/emails`);
+		await test.step('Step 2: Retrieve mock email', async () => {
+			const response = await request.get(`${baseUrl}/debug/emails`);
 
-      expect(response.status()).toBe(200);
-      const emails = await response.json();
+			expect(response.status()).toBe(200);
+			const emails = await response.json();
 
-      const testEmails = emails.filter((email: MockEmail) => email.to === testEmail);
-      expect(testEmails.length).toBeGreaterThan(0);
+			const testEmails = emails.filter((email: MockEmail) => email.to === testEmail);
+			expect(testEmails.length).toBeGreaterThan(0);
 
-      const latestEmail = testEmails.sort(
-        (a: MockEmail, b: MockEmail) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )[0];
+			const latestEmail = testEmails.sort(
+				(a: MockEmail, b: MockEmail) =>
+					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+			)[0];
 
-      expect(latestEmail.subject).toBe("Welcome to Secret Detector");
-      expect(latestEmail.html).toContain("<a");
-      expect(latestEmail.html).toContain("/terms");
+			expect(latestEmail.subject).toBe('Welcome to Secret Detector');
+			expect(latestEmail.html).toContain('<a');
+			expect(latestEmail.html).toContain('/terms');
 
-      const linkMatch = latestEmail.html.match(/href="([^"]*auth\/verify\?token=[^"]*)"/);
-      expect(linkMatch).not.toBeNull();
+			const linkMatch = latestEmail.html.match(/href="([^"]*auth\/verify\?token=[^"]*)"/);
+			expect(linkMatch).not.toBeNull();
 
-      magicLink = linkMatch ? linkMatch[1] : null;
-      expect(magicLink).not.toBeNull();
-      expect(magicLink).toContain("/auth/verify?token=");
-    });
+			magicLink = linkMatch ? linkMatch[1] : null;
+			expect(magicLink).not.toBeNull();
+			expect(magicLink).toContain('/auth/verify?token=');
+		});
 
-    let sessionId: string | null = null; // eslint-disable-line custom/no-mutable-variables
+		let sessionId: string | null = null; // eslint-disable-line custom/no-mutable-variables
 
-    await test.step("Step 3: Visit magic link", async () => {
-      expect(magicLink).not.toBeNull();
-      
-      const url = magicLink!.startsWith("http") ? magicLink! : `${baseUrl}${magicLink}`;
-      
-      const response = await request.get(url, {
-        maxRedirects: 0,
-        headers: { "Accept": "text/html" }
-      });
+		await test.step('Step 3: Visit magic link', async () => {
+			expect(magicLink).not.toBeNull();
 
-      expect([302, 303]).toContain(response.status());
-      expect(response.headers().location).toBe("/domains");
+			const url = magicLink!.startsWith('http') ? magicLink! : `${baseUrl}${magicLink}`;
 
-      const setCookieHeader = response.headers()["set-cookie"];
-      expect(setCookieHeader).toBeDefined();
+			const response = await request.get(url, {
+				maxRedirects: 0,
+				headers: { Accept: 'text/html' },
+			});
 
-      const sessionMatch = setCookieHeader?.match(/session_id=([^;]+)/);
-      expect(sessionMatch).not.toBeNull();
+			expect([302, 303]).toContain(response.status());
+			expect(response.headers().location).toBe('/domains');
 
-      sessionId = sessionMatch ? sessionMatch[1] : null;
-      expect(sessionId).not.toBeNull();
-    });
+			const setCookieHeader = response.headers()['set-cookie'];
+			expect(setCookieHeader).toBeDefined();
 
-    await test.step("Step 4: Verify authenticated state", async () => {
-      expect(sessionId).not.toBeNull();
+			const sessionMatch = setCookieHeader?.match(/session_id=([^;]+)/);
+			expect(sessionMatch).not.toBeNull();
 
-      const response = await request.get(`${baseUrl}/auth/whoami`, {
-        headers: {
-          "Cookie": `session_id=${sessionId}`
-        }
-      });
+			sessionId = sessionMatch ? sessionMatch[1] : null;
+			expect(sessionId).not.toBeNull();
+		});
 
-      expect(response.status()).toBe(200);
-      const body = await response.json();
+		await test.step('Step 4: Verify authenticated state', async () => {
+			expect(sessionId).not.toBeNull();
 
-      expect(body).toHaveProperty("userId");
-      expect(body).toHaveProperty("email");
-      expect(body.email).toBe(testEmail);
-      expect(body.userId).toMatch(/^[0-9a-f-]{36}$/);
-    });
-  });
+			const response = await request.get(`${baseUrl}/auth/whoami`, {
+				headers: {
+					Cookie: `session_id=${sessionId}`,
+				},
+			});
 
-  test("invalid token returns 401", async ({ request }) => {
-    const response = await request.get(`${baseUrl}/auth/verify?token=invalid_token`, {
-      maxRedirects: 0
-    });
+			expect(response.status()).toBe(200);
+			const body = await response.json();
 
-    expect(response.status()).toBe(401);
-  });
+			expect(body).toHaveProperty('userId');
+			expect(body).toHaveProperty('email');
+			expect(body.email).toBe(testEmail);
+			expect(body.userId).toMatch(/^[0-9a-f-]{36}$/);
+		});
+	});
 
-  test("missing token returns 400", async ({ request }) => {
-    const response = await request.get(`${baseUrl}/auth/verify`, {
-      maxRedirects: 0
-    });
+	test('invalid token returns 401', async ({ request }) => {
+		const response = await request.get(`${baseUrl}/auth/verify?token=invalid_token`, {
+			maxRedirects: 0,
+		});
 
-    expect(response.status()).toBe(400);
-  });
+		expect(response.status()).toBe(401);
+	});
 
-  test("whoami returns 401 without session", async ({ request }) => {
-    const response = await request.get(`${baseUrl}/auth/whoami`);
+	test('missing token returns 400', async ({ request }) => {
+		const response = await request.get(`${baseUrl}/auth/verify`, {
+			maxRedirects: 0,
+		});
 
-    expect(response.status()).toBe(401);
-    const body = await response.json();
-    expect(body).toHaveProperty("error");
-  });
+		expect(response.status()).toBe(400);
+	});
 
-  test("returning user receives login email", async ({ request }) => {
-    const timestamp = Date.now();
-    const testEmail = `returning-${timestamp}@example.com`;
+	test('whoami returns 401 without session', async ({ request }) => {
+		const response = await request.get(`${baseUrl}/auth/whoami`);
 
-    await createAuthenticatedSession(request, testEmail);
+		expect(response.status()).toBe(401);
+		const body = await response.json();
+		expect(body).toHaveProperty('error');
+	});
 
-    const response = await request.post(`${baseUrl}/auth/request-link`, {
-      headers: { "Content-Type": "application/json" },
-      data: { email: testEmail }
-    });
+	test('returning user receives login email', async ({ request }) => {
+		const timestamp = Date.now();
+		const testEmail = `returning-${timestamp}@example.com`;
 
-    expect(response.status()).toBe(200);
+		await createAuthenticatedSession(request, testEmail);
 
-    const emailsResponse = await request.get(`${baseUrl}/debug/emails`);
-    const emails = await emailsResponse.json();
+		const response = await request.post(`${baseUrl}/auth/request-link`, {
+			headers: { 'Content-Type': 'application/json' },
+			data: { email: testEmail },
+		});
 
-    const testEmails = emails.filter((email: MockEmail) => email.to === testEmail);
-    const latestEmail = testEmails.sort(
-      (a: MockEmail, b: MockEmail) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )[0];
+		expect(response.status()).toBe(200);
 
-    expect(latestEmail.subject).toBe("Your login link");
-    expect(latestEmail.html).not.toContain("/terms");
-    expect(latestEmail.html).not.toContain("/privacy");
-    expect(latestEmail.html).toContain("/auth/verify?token=");
-  });
+		const emailsResponse = await request.get(`${baseUrl}/debug/emails`);
+		const emails = await emailsResponse.json();
 
-  test("logout clears session", async ({ request }) => {
-    const session = await createAuthenticatedSession(request, `test-logout-${Date.now()}@example.com`);
-    const sessionId = session.sessionId;
+		const testEmails = emails.filter((email: MockEmail) => email.to === testEmail);
+		const latestEmail = testEmails.sort(
+			(a: MockEmail, b: MockEmail) =>
+				new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+		)[0];
 
-    const whoamiBeforeResponse = await request.get(`${baseUrl}/auth/whoami`, {
-      headers: { "Cookie": `session_id=${sessionId}` }
-    });
-    expect(whoamiBeforeResponse.status()).toBe(200);
+		expect(latestEmail.subject).toBe('Your login link');
+		expect(latestEmail.html).not.toContain('/terms');
+		expect(latestEmail.html).not.toContain('/privacy');
+		expect(latestEmail.html).toContain('/auth/verify?token=');
+	});
 
-    const logoutResponse = await request.post(`${baseUrl}/auth/logout`, {
-      headers: { "Cookie": `session_id=${sessionId}` }
-    });
-    expect(logoutResponse.status()).toBe(200);
+	test('logout clears session', async ({ request }) => {
+		const session = await createAuthenticatedSession(
+			request,
+			`test-logout-${Date.now()}@example.com`,
+		);
+		const sessionId = session.sessionId;
 
-    const whoamiAfterResponse = await request.get(`${baseUrl}/auth/whoami`, {
-      headers: { "Cookie": `session_id=${sessionId}` }
-    });
-    expect(whoamiAfterResponse.status()).toBe(401);
-  });
+		const whoamiBeforeResponse = await request.get(`${baseUrl}/auth/whoami`, {
+			headers: { Cookie: `session_id=${sessionId}` },
+		});
+		expect(whoamiBeforeResponse.status()).toBe(200);
+
+		const logoutResponse = await request.post(`${baseUrl}/auth/logout`, {
+			headers: { Cookie: `session_id=${sessionId}` },
+		});
+		expect(logoutResponse.status()).toBe(200);
+
+		const whoamiAfterResponse = await request.get(`${baseUrl}/auth/whoami`, {
+			headers: { Cookie: `session_id=${sessionId}` },
+		});
+		expect(whoamiAfterResponse.status()).toBe(401);
+	});
 });

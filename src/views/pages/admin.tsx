@@ -1,8 +1,8 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
-import { Layout } from "../layout.js";
-import { Section } from "../components/Section.js";
-import { ScanCard } from "../components/ScanCard.js";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
+import { Layout } from '../layout.js';
+import { Section } from '../components/Section.js';
+import { ScanCard } from '../components/ScanCard.js';
 
 type AdminPageProps = Record<string, never>;
 
@@ -21,13 +21,12 @@ export const AdminPage: FC<AdminPageProps> = z
 						<ScanCard>
 							<ul class="space-y-3">
 								<li>
-									<a
-										href="/admin/queues"
-										class="text-sm font-medium text-primary"
-									>
+									<a href="/admin/queues" class="text-sm font-medium text-primary">
 										Queue Monitor
 									</a>
-									<p class="text-sm text-muted-foreground">View BullMQ job queues and retry failed scans</p>
+									<p class="text-sm text-muted-foreground">
+										View BullMQ job queues and retry failed scans
+									</p>
 								</li>
 							</ul>
 						</ScanCard>

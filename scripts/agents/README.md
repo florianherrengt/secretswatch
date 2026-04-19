@@ -35,11 +35,11 @@ Every script prints a single JSON object to stdout:
 
 ```json
 {
-  "status": "pass | fail",
-  "tool": "eslint",
-  "summary": "ESLint: 2 errors",
-  "metrics": { "errors": 2 },
-  "errors": [{ "message": "...", "file": "...", "line": 42 }]
+	"status": "pass | fail",
+	"tool": "eslint",
+	"summary": "ESLint: 2 errors",
+	"metrics": { "errors": 2 },
+	"errors": [{ "message": "...", "file": "...", "line": 42 }]
 }
 ```
 

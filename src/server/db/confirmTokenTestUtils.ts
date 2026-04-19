@@ -1,7 +1,7 @@
 /* eslint-disable custom/no-raw-functions */
-import { ioredisClient } from "../scan/redis.js";
+import { ioredisClient } from '../scan/redis.js';
 
-const CONFIRM_TOKEN_KEY_PREFIX = "confirm-tokens:";
+const CONFIRM_TOKEN_KEY_PREFIX = 'confirm-tokens:';
 
 export interface ConfirmTokenRow {
 	key: string;
@@ -14,8 +14,7 @@ export interface StoredConfirmTokenValue {
 	userId: string;
 }
 
-export const getConfirmTokenStorageKey = (token: string) =>
-	`${CONFIRM_TOKEN_KEY_PREFIX}${token}`;
+export const getConfirmTokenStorageKey = (token: string) => `${CONFIRM_TOKEN_KEY_PREFIX}${token}`;
 
 export const getConfirmTokenRow = async (token: string): Promise<ConfirmTokenRow | null> => {
 	const key = getConfirmTokenStorageKey(token);

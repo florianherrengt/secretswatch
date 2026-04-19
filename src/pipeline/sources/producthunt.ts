@@ -1,30 +1,26 @@
-import { z } from "zod";
-import type {
-	DomainSourceDefinition,
-	SourceDebugResult,
-	SourceFetchResult
-} from "./types.js";
-import { sourceDebugResultSchema } from "./types.js";
+import { z } from 'zod';
+import type { DomainSourceDefinition, SourceDebugResult, SourceFetchResult } from './types.js';
+import { sourceDebugResultSchema } from './types.js';
 
-const PRODUCT_HUNT_API_URL = "https://api.producthunt.com/v2/api/graphql";
-const SOURCE_KEY = "producthunt";
+const PRODUCT_HUNT_API_URL = 'https://api.producthunt.com/v2/api/graphql';
+const SOURCE_KEY = 'producthunt';
 const MAX_RUNTIME_MS = 5_000;
 const RESOLUTION_CONCURRENCY = 4;
 const MAX_RATE_LIMIT_RETRIES = 3;
 
 const blockedDomains = new Set([
-	"producthunt.com",
-	"twitter.com",
-	"github.com",
-	"facebook.com",
-	"linkedin.com",
-	"instagram.com",
-	"youtube.com",
-	"reddit.com"
+	'producthunt.com',
+	'twitter.com',
+	'github.com',
+	'facebook.com',
+	'linkedin.com',
+	'instagram.com',
+	'youtube.com',
+	'reddit.com',
 ]);
 
 const productHuntInputSchema = z.object({
-	maxPages: z.coerce.number().int().min(1).max(20).default(10)
+	maxPages: z.coerce.number().int().min(1).max(20).default(10),
 });
 
 export type ProductHuntInput = z.infer<typeof productHuntInputSchema>;
@@ -33,7 +29,7 @@ export { productHuntInputSchema };
 
 const productHuntPostSchema = z.object({
 	website: z.string().nullable().optional(),
-	createdAt: z.string()
+	createdAt: z.string(),
 });
 
 const productHuntGraphqlResponseSchema = z.object({
@@ -42,23 +38,23 @@ const productHuntGraphqlResponseSchema = z.object({
 			posts: z.object({
 				edges: z.array(
 					z.object({
-						node: productHuntPostSchema
-					})
+						node: productHuntPostSchema,
+					}),
 				),
 				pageInfo: z.object({
 					hasNextPage: z.boolean(),
-					endCursor: z.string().nullable()
-				})
-			})
+					endCursor: z.string().nullable(),
+				}),
+			}),
 		})
 		.optional(),
 	errors: z
 		.array(
 			z.object({
-				message: z.string()
-			})
+				message: z.string(),
+			}),
 		)
-		.optional()
+		.optional(),
 });
 
 type ProductHuntPost = z.infer<typeof productHuntPostSchema>;
@@ -66,7 +62,7 @@ type ProductHuntPost = z.infer<typeof productHuntPostSchema>;
 type ResolveTrace = {
 	readonly input: string;
 	readonly output: string | null;
-	readonly status: "ok" | "failed" | "filtered";
+	readonly status: 'ok' | 'failed' | 'filtered';
 	readonly reason?: string;
 };
 
@@ -91,7 +87,7 @@ const isHttpUrl = z
 	.implement((value) => {
 		try {
 			const url = new URL(value);
-			return url.protocol === "http:" || url.protocol === "https:";
+			return url.protocol === 'http:' || url.protocol === 'https:';
 		} catch {
 			return false;
 		}
@@ -110,7 +106,7 @@ const normalizeHostname = z
 
 		const parsed = (() => {
 			try {
-				if (raw.includes("://")) {
+				if (raw.includes('://')) {
 					return new URL(raw);
 				}
 				return new URL(`https://${raw}`);
@@ -123,13 +119,13 @@ const normalizeHostname = z
 			return null;
 		}
 
-		const hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
+		const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
 
-		if (hostname.length === 0 || hostname === "localhost") {
+		if (hostname.length === 0 || hostname === 'localhost') {
 			return null;
 		}
 
-		const labels = hostname.split(".");
+		const labels = hostname.split('.');
 
 		if (labels.length < 2) {
 			return null;
@@ -147,25 +143,25 @@ const fetchProductHuntPage = z
 	.args(z.object({ token: z.string(), cursor: z.string().nullable() }))
 	.returns(
 		z.promise(
-			z.discriminatedUnion("ok", [
+			z.discriminatedUnion('ok', [
 				z.object({
 					ok: z.literal(true),
 					posts: z.array(productHuntPostSchema),
 					hasNextPage: z.boolean(),
-					endCursor: z.string().nullable()
+					endCursor: z.string().nullable(),
 				}),
 				z.object({
 					ok: z.literal(false),
 					error: z.string(),
 					rateLimited: z.boolean().optional(),
-					retryAfterMs: z.number().int().nonnegative().optional()
-				})
-			])
-		)
+					retryAfterMs: z.number().int().nonnegative().optional(),
+				}),
+			]),
+		),
 	)
 	.implement(async ({ token, cursor }) => {
 		const parseRetryAfterMs = (response: Response): number | null => {
-			const value = response.headers.get("retry-after");
+			const value = response.headers.get('retry-after');
 
 			if (value === null) {
 				return null;
@@ -188,29 +184,29 @@ const fetchProductHuntPage = z
 
 		try {
 			const response = await fetch(PRODUCT_HUNT_API_URL, {
-				method: "POST",
+				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json"
+					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
 					query:
-						"query($first: Int!, $after: String) { posts(first: $first, after: $after) { edges { node { website createdAt } } pageInfo { hasNextPage endCursor } } }",
+						'query($first: Int!, $after: String) { posts(first: $first, after: $after) { edges { node { website createdAt } } pageInfo { hasNextPage endCursor } } }',
 					variables: {
 						first: 50,
-						after: cursor
-					}
+						after: cursor,
+					},
 				}),
-				signal: AbortSignal.timeout(4_000)
+				signal: AbortSignal.timeout(4_000),
 			});
 
 			if (!response.ok) {
 				if (response.status === 429) {
 					return {
 						ok: false,
-						error: "HTTP 429",
+						error: 'HTTP 429',
 						rateLimited: true,
-						retryAfterMs: parseRetryAfterMs(response) ?? undefined
+						retryAfterMs: parseRetryAfterMs(response) ?? undefined,
 					};
 				}
 
@@ -221,25 +217,25 @@ const fetchProductHuntPage = z
 			const parsed = productHuntGraphqlResponseSchema.safeParse(json);
 
 			if (!parsed.success) {
-				return { ok: false, error: "Invalid response structure" };
+				return { ok: false, error: 'Invalid response structure' };
 			}
 
 			if (parsed.data.errors !== undefined && parsed.data.errors.length > 0) {
-				return { ok: false, error: parsed.data.errors[0]?.message ?? "GraphQL error" };
+				return { ok: false, error: parsed.data.errors[0]?.message ?? 'GraphQL error' };
 			}
 
 			if (parsed.data.data === undefined) {
-				return { ok: false, error: "Missing GraphQL data" };
+				return { ok: false, error: 'Missing GraphQL data' };
 			}
 
 			return {
 				ok: true,
 				posts: parsed.data.data.posts.edges.map((edge) => edge.node),
 				hasNextPage: parsed.data.data.posts.pageInfo.hasNextPage,
-				endCursor: parsed.data.data.posts.pageInfo.endCursor
+				endCursor: parsed.data.data.posts.pageInfo.endCursor,
 			};
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Unknown error";
+			const message = error instanceof Error ? error.message : 'Unknown error';
 			return { ok: false, error: message };
 		}
 	});
@@ -251,14 +247,14 @@ const resolveProductHuntUrl = z
 		z.promise(
 			z.object({
 				resolvedUrl: z.string().nullable(),
-				error: z.string().optional()
-			})
-		)
+				error: z.string().optional(),
+			}),
+		),
 	)
 	.implement(async (url) => {
 		const resolveFromManualResponse = (response: Response): string | null => {
 			if (response.status >= 300 && response.status < 400) {
-				const location = response.headers.get("location");
+				const location = response.headers.get('location');
 
 				if (location === null) {
 					return null;
@@ -276,9 +272,9 @@ const resolveProductHuntUrl = z
 
 		try {
 			const head = await fetch(url, {
-				method: "HEAD",
-				redirect: "manual",
-				signal: AbortSignal.timeout(1_500)
+				method: 'HEAD',
+				redirect: 'manual',
+				signal: AbortSignal.timeout(1_500),
 			});
 
 			const manualHeadTarget = resolveFromManualResponse(head);
@@ -292,9 +288,9 @@ const resolveProductHuntUrl = z
 
 		try {
 			const getManual = await fetch(url, {
-				method: "GET",
-				redirect: "manual",
-				signal: AbortSignal.timeout(2_500)
+				method: 'GET',
+				redirect: 'manual',
+				signal: AbortSignal.timeout(2_500),
 			});
 
 			const manualGetTarget = resolveFromManualResponse(getManual);
@@ -308,9 +304,9 @@ const resolveProductHuntUrl = z
 
 		try {
 			const getFollow = await fetch(url, {
-				method: "GET",
-				redirect: "follow",
-				signal: AbortSignal.timeout(2_500)
+				method: 'GET',
+				redirect: 'follow',
+				signal: AbortSignal.timeout(2_500),
 			});
 
 			if (!getFollow.ok) {
@@ -318,12 +314,12 @@ const resolveProductHuntUrl = z
 			}
 
 			if (getFollow.url === url) {
-				return { resolvedUrl: null, error: "No redirect target discovered" };
+				return { resolvedUrl: null, error: 'No redirect target discovered' };
 			}
 
 			return { resolvedUrl: getFollow.url };
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Resolution failed";
+			const message = error instanceof Error ? error.message : 'Resolution failed';
 			return { resolvedUrl: null, error: message };
 		}
 	});
@@ -333,17 +329,17 @@ const runProductHuntSourcing = z
 	.args(productHuntInputSchema)
 	.returns(
 		z.promise(
-			z.discriminatedUnion("ok", [
+			z.discriminatedUnion('ok', [
 				z.object({ ok: z.literal(true), result: z.custom<SourcingRun>() }),
-				z.object({ ok: z.literal(false), error: z.string() })
-			])
-		)
+				z.object({ ok: z.literal(false), error: z.string() }),
+			]),
+		),
 	)
 	.implement(async (input) => {
 		const token = process.env.PRODUCT_HUNT_TOKEN;
 
 		if (token === undefined || token.trim().length === 0) {
-			return { ok: false, error: "PRODUCT_HUNT_TOKEN not configured" };
+			return { ok: false, error: 'PRODUCT_HUNT_TOKEN not configured' };
 		}
 
 		const totalStart = Date.now();
@@ -361,8 +357,12 @@ const runProductHuntSourcing = z
 
 			let pageResult = await fetchProductHuntPage({ token, cursor });
 
-			for (let attempt = 0; !pageResult.ok && pageResult.rateLimited === true && attempt < MAX_RATE_LIMIT_RETRIES; attempt++) {
-				const fallbackBackoffMs = Math.min(4_000, 500 * (2 ** attempt));
+			for (
+				let attempt = 0;
+				!pageResult.ok && pageResult.rateLimited === true && attempt < MAX_RATE_LIMIT_RETRIES;
+				attempt++
+			) {
+				const fallbackBackoffMs = Math.min(4_000, 500 * 2 ** attempt);
 				const waitMs = Math.max(250, pageResult.retryAfterMs ?? fallbackBackoffMs);
 				const remainingMs = deadline - Date.now();
 
@@ -370,7 +370,7 @@ const runProductHuntSourcing = z
 					const retrySeconds = Math.max(1, Math.ceil(waitMs / 1000));
 					return {
 						ok: false,
-						error: `Rate limited by Product Hunt (HTTP 429). Retry after about ${retrySeconds}s.`
+						error: `Rate limited by Product Hunt (HTTP 429). Retry after about ${retrySeconds}s.`,
 					};
 				}
 
@@ -386,7 +386,7 @@ const runProductHuntSourcing = z
 					const retrySeconds = Math.max(1, Math.ceil((pageResult.retryAfterMs ?? 1000) / 1000));
 					return {
 						ok: false,
-						error: `Rate limited by Product Hunt (HTTP 429). Retry after about ${retrySeconds}s.`
+						error: `Rate limited by Product Hunt (HTTP 429). Retry after about ${retrySeconds}s.`,
 					};
 				}
 
@@ -411,17 +411,17 @@ const runProductHuntSourcing = z
 
 		for (const post of posts) {
 			if (post.website === undefined || post.website === null || post.website.trim().length === 0) {
-				skips.push({ domain: "", reason: "Missing website URL" });
+				skips.push({ domain: '', reason: 'Missing website URL' });
 				continue;
 			}
 
 			if (!isHttpUrl(post.website)) {
-				skips.push({ domain: post.website, reason: "Invalid website URL" });
+				skips.push({ domain: post.website, reason: 'Invalid website URL' });
 				transformations.push({
 					input: post.website,
 					output: null,
-					status: "failed",
-					reason: "Invalid website URL"
+					status: 'failed',
+					reason: 'Invalid website URL',
 				});
 				continue;
 			}
@@ -452,13 +452,13 @@ const runProductHuntSourcing = z
 				if (resolved.resolvedUrl === null) {
 					skips.push({
 						domain: productHuntUrl,
-						reason: resolved.error ?? "Redirect resolution failed"
+						reason: resolved.error ?? 'Redirect resolution failed',
 					});
 					transformations.push({
 						input: productHuntUrl,
 						output: null,
-						status: "failed",
-						reason: resolved.error ?? "Redirect resolution failed"
+						status: 'failed',
+						reason: resolved.error ?? 'Redirect resolution failed',
 					});
 					continue;
 				}
@@ -466,23 +466,23 @@ const runProductHuntSourcing = z
 				const normalized = normalizeHostname(resolved.resolvedUrl);
 
 				if (normalized === null) {
-					skips.push({ domain: productHuntUrl, reason: "Resolved URL has invalid hostname" });
+					skips.push({ domain: productHuntUrl, reason: 'Resolved URL has invalid hostname' });
 					transformations.push({
 						input: productHuntUrl,
 						output: null,
-						status: "failed",
-						reason: `Resolved URL: ${resolved.resolvedUrl}`
+						status: 'failed',
+						reason: `Resolved URL: ${resolved.resolvedUrl}`,
 					});
 					continue;
 				}
 
 				if (blockedDomains.has(normalized)) {
-					skips.push({ domain: normalized, reason: "Filtered aggregator domain" });
+					skips.push({ domain: normalized, reason: 'Filtered aggregator domain' });
 					transformations.push({
 						input: productHuntUrl,
 						output: normalized,
-						status: "filtered",
-						reason: `Resolved URL: ${resolved.resolvedUrl}`
+						status: 'filtered',
+						reason: `Resolved URL: ${resolved.resolvedUrl}`,
 					});
 					continue;
 				}
@@ -491,8 +491,8 @@ const runProductHuntSourcing = z
 				transformations.push({
 					input: productHuntUrl,
 					output: normalized,
-					status: "ok",
-					reason: `Resolved URL: ${resolved.resolvedUrl}`
+					status: 'ok',
+					reason: `Resolved URL: ${resolved.resolvedUrl}`,
 				});
 			}
 		};
@@ -501,8 +501,8 @@ const runProductHuntSourcing = z
 
 		if (Date.now() >= deadline && cursorIndex < candidates.length) {
 			skips.push({
-				domain: "",
-				reason: `Stopped after ${MAX_RUNTIME_MS}ms runtime limit`
+				domain: '',
+				reason: `Stopped after ${MAX_RUNTIME_MS}ms runtime limit`,
 			});
 		}
 
@@ -524,9 +524,9 @@ const runProductHuntSourcing = z
 				timing: {
 					fetchMs,
 					normalizeMs,
-					totalMs
-				}
-			}
+					totalMs,
+				},
+			},
 		};
 	});
 
@@ -544,7 +544,7 @@ const productHuntFetch = z
 		return {
 			ok: true,
 			fetchedEntries: run.result.fetchedEntries,
-			domains: run.result.domains
+			domains: run.result.domains,
 		};
 	});
 
@@ -568,8 +568,8 @@ const productHuntDebug = z
 				metadata: {
 					timing: { fetchMs: 0, normalizeMs: 0, totalMs: 0 },
 					skips: [],
-					sampleRaw: []
-				}
+					sampleRaw: [],
+				},
 			});
 		}
 
@@ -584,8 +584,8 @@ const productHuntDebug = z
 			metadata: {
 				timing: run.result.timing,
 				skips: run.result.skips,
-				sampleRaw: run.result.sampleRaw
-			}
+				sampleRaw: run.result.sampleRaw,
+			},
 		});
 	});
 
@@ -609,10 +609,10 @@ const productHuntSourceDebug = z
 
 export const productHuntSource: DomainSourceDefinition = {
 	key: SOURCE_KEY,
-	label: "Product Hunt",
-	description: "Newly launched products from Product Hunt",
+	label: 'Product Hunt',
+	description: 'Newly launched products from Product Hunt',
 	inputSchema: productHuntInputSchema,
 	fetch: productHuntSourceFetch,
 	normalizeDomain: productHuntSourceNormalize,
-	debug: productHuntSourceDebug
+	debug: productHuntSourceDebug,
 };

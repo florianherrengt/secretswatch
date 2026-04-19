@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { SENSITIVE_ENV_VAR_KEYS, IMPLAUSIBLE_VALUES } from "./keys.js";
-import type { ScriptDetection } from "../../shared/detection.js";
+import { z } from 'zod';
+import { SENSITIVE_ENV_VAR_KEYS, IMPLAUSIBLE_VALUES } from './keys.js';
+import type { ScriptDetection } from '../../shared/detection.js';
 
 const implausibleSet = new Set(IMPLAUSIBLE_VALUES);
 
@@ -9,13 +9,13 @@ const buildPatternsForKey = z
 	.args(z.string())
 	.returns(z.array(z.custom<RegExp>()))
 	.implement((keyName) => {
-		const escaped = keyName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const escaped = keyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		const prefix = `(?<![a-zA-Z0-9_$.])${escaped}\\s*[=:]\\s*`;
 
 		return [
-			new RegExp(`${prefix}"((?:[^"\\\\]|\\\\.)*)"`, "gi"),
-			new RegExp(`${prefix}'((?:[^'\\\\]|\\\\.)*)'`, "gi"),
-			new RegExp(`${prefix}\`((?:[^\`\\\\]|\\\\.)*)\``, "gi")
+			new RegExp(`${prefix}"((?:[^"\\\\]|\\\\.)*)"`, 'gi'),
+			new RegExp(`${prefix}'((?:[^'\\\\]|\\\\.)*)'`, 'gi'),
+			new RegExp(`${prefix}\`((?:[^\`\\\\]|\\\\.)*)\``, 'gi'),
 		];
 	});
 
@@ -34,7 +34,7 @@ export const findEnvVarKeyDetections = z
 				regex.lastIndex = 0;
 
 				for (const match of body.matchAll(regex)) {
-					const stringValue = match[1] ?? "";
+					const stringValue = match[1] ?? '';
 
 					if (stringValue.length === 0) {
 						continue;
@@ -44,14 +44,19 @@ export const findEnvVarKeyDetections = z
 						continue;
 					}
 
-					if (regex.source.includes("`") && stringValue.includes("${")) {
+					if (regex.source.includes('`') && stringValue.includes('${')) {
 						continue;
 					}
 
 					const fullMatch = match[0];
 					const matchIndex = match.index ?? 0;
-					const valueOffsetInMatch = fullMatch.indexOf(stringValue, fullMatch.length - stringValue.length - 1);
-					const valueStart = matchIndex + (valueOffsetInMatch >= 0 ? valueOffsetInMatch : fullMatch.indexOf(stringValue));
+					const valueOffsetInMatch = fullMatch.indexOf(
+						stringValue,
+						fullMatch.length - stringValue.length - 1,
+					);
+					const valueStart =
+						matchIndex +
+						(valueOffsetInMatch >= 0 ? valueOffsetInMatch : fullMatch.indexOf(stringValue));
 					const valueEnd = valueStart + stringValue.length;
 
 					const positionKey = `${valueStart}:${valueEnd}`;
@@ -63,7 +68,7 @@ export const findEnvVarKeyDetections = z
 					detections.push({
 						value: stringValue,
 						start: valueStart,
-						end: valueEnd
+						end: valueEnd,
 					});
 				}
 			}

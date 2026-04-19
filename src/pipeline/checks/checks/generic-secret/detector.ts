@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { hasNegativeContext, hasPositiveContext } from "../../shared/context.js";
-import type { ScriptDetection } from "../../shared/detection.js";
-import { hasGenericTokenEntropy } from "../../shared/entropy.js";
+import { z } from 'zod';
+import { hasNegativeContext, hasPositiveContext } from '../../shared/context.js';
+import type { ScriptDetection } from '../../shared/detection.js';
+import { hasGenericTokenEntropy } from '../../shared/entropy.js';
 
 const isAllowlistedValue = z
 	.function()
@@ -22,7 +22,7 @@ const isAllowlistedValue = z
 			return true;
 		}
 
-		if (lowerValue.includes("example")) {
+		if (lowerValue.includes('example')) {
 			return true;
 		}
 
@@ -34,11 +34,11 @@ const isLikelyJwt = z
 	.args(z.string())
 	.returns(z.boolean())
 	.implement((value) => {
-		if (!value.startsWith("eyJ")) {
+		if (!value.startsWith('eyJ')) {
 			return false;
 		}
 
-		const segments = value.split(".");
+		const segments = value.split('.');
 
 		if (segments.length !== 3) {
 			return false;
@@ -60,9 +60,9 @@ export const findGenericSecretDetections = z
 		const genericTokenRegex = /(["'`])([A-Za-z0-9_./+=-]{16,})\1/g;
 
 		for (const match of body.matchAll(genericTokenRegex)) {
-			const value = match[2] ?? "";
+			const value = match[2] ?? '';
 
-			if (value.length === 0 || typeof match.index !== "number") {
+			if (value.length === 0 || typeof match.index !== 'number') {
 				continue;
 			}
 
@@ -78,7 +78,7 @@ export const findGenericSecretDetections = z
 				continue;
 			}
 
-			const quoteLength = (match[1] ?? "").length;
+			const quoteLength = (match[1] ?? '').length;
 			const start = match.index + quoteLength;
 			const end = start + value.length;
 
@@ -93,7 +93,7 @@ export const findGenericSecretDetections = z
 			detections.push({
 				value,
 				start,
-				end
+				end,
 			});
 		}
 

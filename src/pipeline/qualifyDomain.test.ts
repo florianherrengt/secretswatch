@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { Hono } from "hono";
-import { serve } from "@hono/node-server";
-import { beforeAll, afterAll, describe, expect, it } from "vitest";
-import { qualifyDomain } from "./qualifyDomain.js";
+import { z } from 'zod';
+import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
+import { beforeAll, afterAll, describe, expect, it } from 'vitest';
+import { qualifyDomain } from './qualifyDomain.js';
 
 const TEST_PORT = 3311;
 type TestServer = ReturnType<typeof serve>;
@@ -24,7 +24,7 @@ const waitForServer = z
 			}
 
 			if (Date.now() - startedAt > timeoutMs) {
-				throw new Error("Local test server did not start in time");
+				throw new Error('Local test server did not start in time');
 			}
 
 			await new Promise((resolve) => {
@@ -52,11 +52,11 @@ const closeServer = z
 
 const testApp = new Hono();
 
-testApp.get("/healthz", (c) => {
-	return c.text("ok");
+testApp.get('/healthz', (c) => {
+	return c.text('ok');
 });
 
-testApp.get("/scenarios/pem-key", (c) => {
+testApp.get('/scenarios/pem-key', (c) => {
 	return c.html(`<!doctype html>
 <html lang="en">
 <head>
@@ -74,7 +74,7 @@ testApp.get("/scenarios/pem-key", (c) => {
 </html>`);
 });
 
-testApp.get("/scenarios/no-script", (c) => {
+testApp.get('/scenarios/no-script', (c) => {
 	return c.html(`<!doctype html>
 <html lang="en">
 <head>
@@ -87,7 +87,7 @@ testApp.get("/scenarios/no-script", (c) => {
 </html>`);
 });
 
-testApp.get("/scenarios/parking", (c) => {
+testApp.get('/scenarios/parking', (c) => {
 	return c.html(`<!doctype html>
 <html lang="en">
 <head>
@@ -101,15 +101,15 @@ testApp.get("/scenarios/parking", (c) => {
 </html>`);
 });
 
-testApp.get("/scenarios/tiny", (c) => {
+testApp.get('/scenarios/tiny', (c) => {
 	return c.html("<script src='/x.js'></script>");
 });
 
-testApp.get("/scenarios/predictions-drop", (c) => {
-	return c.redirect("/scenarios/pem-key", 302);
+testApp.get('/scenarios/predictions-drop', (c) => {
+	return c.redirect('/scenarios/pem-key', 302);
 });
 
-testApp.get("/scenarios/predictions/latest", (c) => {
+testApp.get('/scenarios/predictions/latest', (c) => {
 	return c.html(`<!doctype html>
 <html lang="en">
 <head>
@@ -123,11 +123,11 @@ testApp.get("/scenarios/predictions/latest", (c) => {
 </html>`);
 });
 
-testApp.get("/scenarios/predictions", (c) => {
-	return c.redirect("/scenarios/predictions/latest", 302);
+testApp.get('/scenarios/predictions', (c) => {
+	return c.redirect('/scenarios/predictions/latest', 302);
 });
 
-describe("qualifyDomain", () => {
+describe('qualifyDomain', () => {
 	let server: TestServer; // eslint-disable-line custom/no-mutable-variables
 
 	beforeAll(async () => {
@@ -139,52 +139,54 @@ describe("qualifyDomain", () => {
 		await closeServer(server);
 	});
 
-	it("returns true for valid app-like homepage", async () => {
+	it('returns true for valid app-like homepage', async () => {
 		const result = await qualifyDomain({ domain: `localhost:${TEST_PORT}/scenarios/pem-key` });
 
 		expect(result.isQualified).toBe(true);
-		expect(result.reasons).toContain("Qualified: HTML contains scripts and passes all checks");
+		expect(result.reasons).toContain('Qualified: HTML contains scripts and passes all checks');
 	});
 
-	it("returns false when no script tag is present", async () => {
+	it('returns false when no script tag is present', async () => {
 		const result = await qualifyDomain({ domain: `localhost:${TEST_PORT}/scenarios/no-script` });
 
 		expect(result.isQualified).toBe(false);
-		expect(result.reasons).toContain("Failed: no <script> tag found");
+		expect(result.reasons).toContain('Failed: no <script> tag found');
 	});
 
-	it("returns false for parking page markers", async () => {
+	it('returns false for parking page markers', async () => {
 		const result = await qualifyDomain({ domain: `localhost:${TEST_PORT}/scenarios/parking` });
 
 		expect(result.isQualified).toBe(false);
-		expect(result.reasons).toContain("Failed: detected parking page");
+		expect(result.reasons).toContain('Failed: detected parking page');
 	});
 
-	it("returns false for tiny html pages", async () => {
+	it('returns false for tiny html pages', async () => {
 		const result = await qualifyDomain({ domain: `localhost:${TEST_PORT}/scenarios/tiny` });
 
 		expect(result.isQualified).toBe(false);
-		expect(result.reasons).toContain("Failed: HTML too small");
+		expect(result.reasons).toContain('Failed: HTML too small');
 	});
 
-	it("returns false when homepage fetch fails", async () => {
-		const result = await qualifyDomain({ domain: "localhost:39999/scenarios/pem-key" });
+	it('returns false when homepage fetch fails', async () => {
+		const result = await qualifyDomain({ domain: 'localhost:39999/scenarios/pem-key' });
 
 		expect(result.isQualified).toBe(false);
-		expect(result.reasons).toContain("Failed: could not fetch homepage");
+		expect(result.reasons).toContain('Failed: could not fetch homepage');
 	});
 
-	it("returns false when redirect drops an explicitly requested path", async () => {
-		const result = await qualifyDomain({ domain: `localhost:${TEST_PORT}/scenarios/predictions-drop` });
+	it('returns false when redirect drops an explicitly requested path', async () => {
+		const result = await qualifyDomain({
+			domain: `localhost:${TEST_PORT}/scenarios/predictions-drop`,
+		});
 
 		expect(result.isQualified).toBe(false);
-		expect(result.reasons).toContain("Failed: redirected outside requested path");
+		expect(result.reasons).toContain('Failed: redirected outside requested path');
 	});
 
-	it("returns true when redirect stays within the requested path", async () => {
+	it('returns true when redirect stays within the requested path', async () => {
 		const result = await qualifyDomain({ domain: `localhost:${TEST_PORT}/scenarios/predictions` });
 
 		expect(result.isQualified).toBe(true);
-		expect(result.reasons).toContain("Qualified: HTML contains scripts and passes all checks");
+		expect(result.reasons).toContain('Qualified: HTML contains scripts and passes all checks');
 	});
 });

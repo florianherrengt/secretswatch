@@ -1,16 +1,16 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
-import { ScanCard } from "../components/ScanCard.js";
-import { Section } from "../components/Section.js";
-import { Layout } from "../layout.js";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
+import { ScanCard } from '../components/ScanCard.js';
+import { Section } from '../components/Section.js';
+import { Layout } from '../layout.js';
 
 export const confirmPagePropsSchema = z.object({
 	title: z.string().min(1),
 	message: z.string().min(1),
 	confirmAction: z.string().min(1),
 	cancelHref: z.string().min(1),
-	confirmLabel: z.string().min(1).default("Confirm"),
-	cancelLabel: z.string().min(1).default("Cancel")
+	confirmLabel: z.string().min(1).default('Confirm'),
+	cancelLabel: z.string().min(1).default('Cancel'),
 });
 
 export type ConfirmPageProps = z.infer<typeof confirmPagePropsSchema>;

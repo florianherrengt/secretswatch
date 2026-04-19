@@ -14,6 +14,6 @@ export {
 	type CheckRunOutput,
 	type CheckDefinition,
 	type CheckResult,
-	type ScanCheck
-} from "./contracts.js";
-export { builtinChecks } from "./registry.js";
+	type ScanCheck,
+} from './contracts.js';
+export { builtinChecks } from './registry.js';

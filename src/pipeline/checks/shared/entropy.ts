@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 const GENERIC_TOKEN_MIN_LENGTH = 20;
 const GENERIC_TOKEN_MIN_ENTROPY = 3.6;

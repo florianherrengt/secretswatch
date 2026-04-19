@@ -1,19 +1,19 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
-import { Divider } from "../components/Divider.js";
-import { ScanCard } from "../components/ScanCard.js";
-import { Section } from "../components/Section.js";
-import { Layout } from "../layout.js";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
+import { Divider } from '../components/Divider.js';
+import { ScanCard } from '../components/ScanCard.js';
+import { Section } from '../components/Section.js';
+import { Layout } from '../layout.js';
 
 export const domainListItemSchema = z.object({
 	id: z.string().uuid(),
 	domain: z.string(),
-	lastCheckResult: z.enum(["pass", "issues", "none"]),
-	deleteConfirmHref: z.string().min(1)
+	lastCheckResult: z.enum(['pass', 'issues', 'none']),
+	deleteConfirmHref: z.string().min(1),
 });
 
 export const domainListPagePropsSchema = z.object({
-	domains: z.array(domainListItemSchema)
+	domains: z.array(domainListItemSchema),
 });
 
 export type DomainListPageProps = z.infer<typeof domainListPagePropsSchema>;
@@ -23,8 +23,8 @@ export const DomainListPage: FC<DomainListPageProps> = z
 	.args(domainListPagePropsSchema)
 	.returns(z.custom<ReturnType<FC<DomainListPageProps>>>())
 	.implement((props) => {
-		const renderLastCheck = (result: "pass" | "issues" | "none") => {
-			if (result === "pass") {
+		const renderLastCheck = (result: 'pass' | 'issues' | 'none') => {
+			if (result === 'pass') {
 				return (
 					<span class="inline-flex items-center gap-2 text-success" aria-label="Last check passed">
 						<span aria-hidden="true">&#10003;</span>
@@ -33,9 +33,12 @@ export const DomainListPage: FC<DomainListPageProps> = z
 				);
 			}
 
-			if (result === "issues") {
+			if (result === 'issues') {
 				return (
-					<span class="inline-flex items-center gap-2 text-error" aria-label="Last check found issues">
+					<span
+						class="inline-flex items-center gap-2 text-error"
+						aria-label="Last check found issues"
+					>
 						<span aria-hidden="true">&#10007;</span>
 						<span class="text-xs font-medium">Issues found</span>
 					</span>
@@ -50,7 +53,11 @@ export const DomainListPage: FC<DomainListPageProps> = z
 				<div class="space-y-6">
 					<Section title="Add Domain">
 						<ScanCard>
-							<form action="/domains" method="post" class="flex flex-col gap-3 sm:flex-row sm:items-center">
+							<form
+								action="/domains"
+								method="post"
+								class="flex flex-col gap-3 sm:flex-row sm:items-center"
+							>
 								<input
 									id="domain"
 									name="domain"
@@ -80,7 +87,10 @@ export const DomainListPage: FC<DomainListPageProps> = z
 								<ul class="space-y-2">
 									{props.domains.map((item) => {
 										return (
-											<li key={item.id} class="flex items-center justify-between gap-3 rounded-md border border-border px-4 py-3">
+											<li
+												key={item.id}
+												class="flex items-center justify-between gap-3 rounded-md border border-border px-4 py-3"
+											>
 												<div class="flex items-center gap-3">
 													<span class="text-sm font-medium text-foreground">{item.domain}</span>
 													{renderLastCheck(item.lastCheckResult)}

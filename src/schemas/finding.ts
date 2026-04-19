@@ -1,6 +1,6 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const findingTypeSchema = z.enum(["secret"]);
+export const findingTypeSchema = z.enum(['secret']);
 
 export const findingSchema = z.object({
 	id: z.string().uuid(),
@@ -10,7 +10,7 @@ export const findingSchema = z.object({
 	file: z.string().url(),
 	snippet: z.string(),
 	fingerprint: z.string(),
-	createdAt: z.date()
+	createdAt: z.date(),
 });
 
 export type FindingType = z.infer<typeof findingTypeSchema>;

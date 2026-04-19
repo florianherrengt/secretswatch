@@ -1,11 +1,11 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
-import { ScanCard } from "./ScanCard.js";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
+import { ScanCard } from './ScanCard.js';
 
 const emptyStateCardPropsSchema = z.object({
 	title: z.string().min(1),
 	description: z.string().min(1),
-	actionHint: z.string().min(1).optional()
+	actionHint: z.string().min(1).optional(),
 });
 
 type EmptyStateCardProps = z.infer<typeof emptyStateCardPropsSchema>;

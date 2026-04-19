@@ -1,8 +1,8 @@
-import { z } from "zod";
-import type { DomainSourceDefinition, SourceFetchResult } from "./types.js";
+import { z } from 'zod';
+import type { DomainSourceDefinition, SourceFetchResult } from './types.js';
 
 const crtshInputSchema = z.object({
-	tld: z.string().min(1).max(63)
+	tld: z.string().min(1).max(63),
 });
 
 export type CrtshInput = z.infer<typeof crtshInputSchema>;
@@ -10,7 +10,7 @@ export type CrtshInput = z.infer<typeof crtshInputSchema>;
 export { crtshInputSchema };
 
 const crtshEntrySchema = z.object({
-	name_value: z.string()
+	name_value: z.string(),
 });
 
 const fetchCrtsh = z
@@ -18,11 +18,11 @@ const fetchCrtsh = z
 	.args(z.string().min(1))
 	.returns(
 		z.promise(
-			z.discriminatedUnion("ok", [
+			z.discriminatedUnion('ok', [
 				z.object({ ok: z.literal(true), entries: z.array(crtshEntrySchema) }),
-				z.object({ ok: z.literal(false), error: z.string() })
-			])
-		)
+				z.object({ ok: z.literal(false), error: z.string() }),
+			]),
+		),
 	)
 	.implement(async (tld) => {
 		const url = `https://crt.sh/?q=%.${encodeURIComponent(tld)}&output=json`;
@@ -30,7 +30,7 @@ const fetchCrtsh = z
 		try {
 			const response = await fetch(url, {
 				signal: AbortSignal.timeout(30_000),
-				headers: { "User-Agent": "secret-detector/0.1.0" }
+				headers: { 'User-Agent': 'secret-detector/0.1.0' },
 			});
 
 			if (!response.ok) {
@@ -41,7 +41,7 @@ const fetchCrtsh = z
 			const entries = crtshEntrySchema.array().parse(body);
 			return { ok: true, entries };
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Unknown error";
+			const message = error instanceof Error ? error.message : 'Unknown error';
 			return { ok: false, error: message };
 		}
 	});
@@ -55,11 +55,11 @@ const normalizeCrtshDomain = z
 
 		if (d.length === 0) return null;
 
-		const withoutWildcard = d.replace(/^\*\./, "");
+		const withoutWildcard = d.replace(/^\*\./, '');
 
 		if (withoutWildcard.length === 0) return null;
 
-		const parts = withoutWildcard.split(".");
+		const parts = withoutWildcard.split('.');
 
 		if (parts.length < 2) return null;
 
@@ -80,7 +80,7 @@ const crtshFetch = z
 		const domainSet = new Set<string>();
 
 		for (const entry of crtResult.entries) {
-			const lines = entry.name_value.split("\n");
+			const lines = entry.name_value.split('\n');
 
 			for (const line of lines) {
 				const trimmed = line.trim().toLowerCase();
@@ -108,10 +108,10 @@ const crtshSourceNormalize = z
 	.implement((domain) => normalizeCrtshDomain(domain));
 
 export const crtshSource: DomainSourceDefinition = {
-	key: "crtsh",
-	label: "crt.sh",
-	description: "Certificate Transparency logs — find domains by TLD",
+	key: 'crtsh',
+	label: 'crt.sh',
+	description: 'Certificate Transparency logs — find domains by TLD',
 	inputSchema: crtshInputSchema,
 	fetch: crtshSourceFetch,
-	normalizeDomain: crtshSourceNormalize
+	normalizeDomain: crtshSourceNormalize,
 };

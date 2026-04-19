@@ -1,8 +1,8 @@
-import { Pool } from "pg";
+import { Pool } from 'pg';
 
 const databaseUrl =
 	process.env.DATABASE_URL ??
-	"postgresql://secret_detector:secret_detector@localhost:5432/secret_detector";
+	'postgresql://secret_detector:secret_detector@localhost:5432/secret_detector';
 
 const pool = new Pool({ connectionString: databaseUrl });
 

@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { checkRunInputSchema, checkRunOutputSchema, checkFindingSchema } from "../../contracts.js";
-import { fingerprintValue } from "../../shared/fingerprint.js";
-import { dedupeFindings } from "../../shared/dedupe.js";
-import { filterAccessibleSourceMaps } from "./detector.js";
+import { z } from 'zod';
+import { checkRunInputSchema, checkRunOutputSchema, checkFindingSchema } from '../../contracts.js';
+import { fingerprintValue } from '../../shared/fingerprint.js';
+import { dedupeFindings } from '../../shared/dedupe.js';
+import { filterAccessibleSourceMaps } from './detector.js';
 
 export const runPublicSourceMapCheck = z
 	.function()
@@ -16,16 +16,16 @@ export const runPublicSourceMapCheck = z
 			const snippet = `Public source map exposed: ${probe.mapUrl} (via ${probe.discoveryMethod}, status ${probe.httpStatus})`;
 
 			const finding: z.infer<typeof checkFindingSchema> = {
-				type: "secret",
+				type: 'secret',
 				file: probe.mapUrl,
 				snippet,
-				fingerprint: fingerprintValue(probe.mapUrl)
+				fingerprint: fingerprintValue(probe.mapUrl),
 			};
 
 			return finding;
 		});
 
 		return {
-			findings: dedupeFindings(findings)
+			findings: dedupeFindings(findings),
 		};
 	});

@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { FC, PropsWithChildren } from "hono/jsx";
+import { z } from 'zod';
+import type { FC, PropsWithChildren } from 'hono/jsx';
 
 type PageHeaderProps = PropsWithChildren<{
 	title: string;

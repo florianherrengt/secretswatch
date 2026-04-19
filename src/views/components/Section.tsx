@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { FC, PropsWithChildren } from "hono/jsx";
+import { z } from 'zod';
+import type { FC, PropsWithChildren } from 'hono/jsx';
 
 type SectionProps = PropsWithChildren<{
 	title: string;
@@ -15,7 +15,7 @@ export const Section: FC<SectionProps> = z
 	.args(sectionPropsSchema)
 	.returns(z.custom<ReturnType<FC<SectionProps>>>())
 	.implement(({ title, description, action, class: classValue, children }) => {
-		const classes = ["space-y-3", classValue ?? ""].join(" ").trim();
+		const classes = ['space-y-3', classValue ?? ''].join(' ').trim();
 
 		return (
 			<section class={classes}>

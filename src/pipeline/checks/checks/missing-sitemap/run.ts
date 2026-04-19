@@ -1,10 +1,6 @@
-import { z } from "zod";
-import {
-	checkRunInputSchema,
-	checkRunOutputSchema,
-	checkFindingSchema
-} from "../../contracts.js";
-import { fingerprintValue } from "../../shared/fingerprint.js";
+import { z } from 'zod';
+import { checkRunInputSchema, checkRunOutputSchema, checkFindingSchema } from '../../contracts.js';
+import { fingerprintValue } from '../../shared/fingerprint.js';
 
 const toDirectoryUrl = z
 	.function()
@@ -13,12 +9,12 @@ const toDirectoryUrl = z
 	.implement((domainUrl) => {
 		const parsedUrl = new URL(domainUrl);
 
-		if (!parsedUrl.pathname.endsWith("/")) {
+		if (!parsedUrl.pathname.endsWith('/')) {
 			parsedUrl.pathname = `${parsedUrl.pathname}/`;
 		}
 
-		parsedUrl.search = "";
-		parsedUrl.hash = "";
+		parsedUrl.search = '';
+		parsedUrl.hash = '';
 
 		return parsedUrl.toString();
 	});
@@ -32,14 +28,14 @@ export const runMissingSitemapCheck = z
 			return { findings: [] };
 		}
 
-		const sitemapUrl = new URL("sitemap.xml", toDirectoryUrl(input.domain)).toString();
+		const sitemapUrl = new URL('sitemap.xml', toDirectoryUrl(input.domain)).toString();
 		const hostname = new URL(input.domain).hostname;
 
 		const finding: z.infer<typeof checkFindingSchema> = {
-			type: "secret",
+			type: 'secret',
 			file: sitemapUrl,
 			snippet: `No sitemap.xml found for ${hostname} at ${sitemapUrl}`,
-			fingerprint: fingerprintValue(`missing-sitemap:${input.domain}`)
+			fingerprint: fingerprintValue(`missing-sitemap:${input.domain}`),
 		};
 
 		return { findings: [finding] };

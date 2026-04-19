@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { ioredisClient } from "../scan/redis.js";
+import { z } from 'zod';
+import { ioredisClient } from '../scan/redis.js';
 
 export const CONFIRM_TOKEN_TTL_SECONDS = 10 * 60;
-const CONFIRM_TOKEN_KEY_PREFIX = "confirm-tokens:";
+const CONFIRM_TOKEN_KEY_PREFIX = 'confirm-tokens:';
 
 export const confirmTokenKey = z
 	.function()
@@ -16,7 +16,7 @@ export const confirmTokenStore = {
 		.args(z.string(), z.record(z.string(), z.unknown()), z.number().int().positive())
 		.returns(z.promise(z.void()))
 		.implement(async (token, value, ttlSeconds) => {
-			await ioredisClient.set(confirmTokenKey(token), JSON.stringify(value), "EX", ttlSeconds);
+			await ioredisClient.set(confirmTokenKey(token), JSON.stringify(value), 'EX', ttlSeconds);
 		}),
 
 	get: z
@@ -35,7 +35,7 @@ export const confirmTokenStore = {
 		.returns(z.promise(z.void()))
 		.implement(async (token) => {
 			await ioredisClient.del(confirmTokenKey(token));
-		})
+		}),
 };
 
 export const clearConfirmTokens = z

@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { redactSecret } from "./redaction.js";
+import { z } from 'zod';
+import { redactSecret } from './redaction.js';
 
 export const buildSnippet = z
 	.function()
@@ -14,7 +14,7 @@ export const buildSnippet = z
 		const localEnd = localStart + (end - start);
 
 		const redacted = `${rawSnippet.slice(0, localStart)}${redactSecret(matchedValue)}${rawSnippet.slice(localEnd)}`;
-		const snippet = redacted.replace(/\s+/g, " ").trim();
+		const snippet = redacted.replace(/\s+/g, ' ').trim();
 
 		if (snippet.length > 180) {
 			return snippet.slice(0, 180);
