@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.1.14 — Fix Debug Page E2E Timeout
+
+Decoupled debug page rendering from external API calls. GET now only pre-fills the form and renders immediately; POST triggers the actual fetch. Prevents Playwright timeouts when external sources (crt.sh) are slow.
+
+---
+
 ## v0.1.13 — Semantic Timestamp Elements
 
 Replace raw text timestamps with `<time datetime>` elements on scan result pages. No formatting applied — raw ISO values displayed as-is, giving a semantic hook for future client-side localization. Removed all server-side and client-side date formatting code.
