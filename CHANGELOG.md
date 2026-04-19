@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.1.15 — Prettier Integration
+
+Added Prettier v3.x as the project code formatter. Configured tabs, single quotes, trailing commas, 100 print width. Integrated format check into pre-commit hook and CI workflow (PR-only). Added VS Code format-on-save settings. Reformatted entire codebase.
+
+---
+
 ## v0.1.14 — Fix Debug Page E2E Timeout
 
 Decoupled debug page rendering from external API calls. GET now only pre-fills the form and renders immediately; POST triggers the actual fetch. Prevents Playwright timeouts when external sources (crt.sh) are slow.

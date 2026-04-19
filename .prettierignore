@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+test-results/
+screenshots/
+.opencode/
+.serena/
+.env

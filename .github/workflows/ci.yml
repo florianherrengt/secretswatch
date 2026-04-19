@@ -66,6 +66,18 @@ jobs:
       - name: Design system enforcement
         run: npm run lint:design-system-enforcement
 
+      - name: Check prettier on changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "$CHANGED_FILES" | xargs npx prettier --check || {
+              echo "::error::Prettier check failed. Run 'npm run format' locally and commit the changes."
+              exit 1
+            }
+          fi
+
       - name: Test
         run: npm test
 
@@ -104,7 +116,7 @@ jobs:
       ADMIN_BASIC_AUTH_USERNAME: admin
       ADMIN_BASIC_AUTH_PASSWORD: changeme
       DEBUG_ENDPOINT: true
-      RESEND_API_KEY: ""
+      RESEND_API_KEY: ''
       RATE_LIMIT_DISABLED: true
 
     steps:
