@@ -4,7 +4,6 @@ import { render } from '../../lib/response.js';
 import { confirmPagePropsSchema, ConfirmPage } from '../../views/pages/confirm.js';
 import { confirmQuerySchema, resolveConfirmTokenForDisplay } from './confirmQuerySchema.js';
 import { consumeConfirmToken, type ConfirmAction } from './confirmActions.js';
-import { type AuthContext } from '../auth/middleware.js';
 
 type ActionHandler = (
 	c: Context,
@@ -55,7 +54,7 @@ export const createConfirmHandlers = z
 			.args(z.custom<Context>())
 			.returns(z.promise(z.instanceof(Response)))
 			.implement(async (c) => {
-				const user = (c as AuthContext).user;
+				const user = c.get('user');
 
 				if (!user) {
 					return c.json({ error: 'Authentication required' }, 401);
