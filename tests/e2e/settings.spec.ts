@@ -254,11 +254,13 @@ test.describe('Settings', () => {
 		authedPage,
 		authSession: _authSession,
 	}) => {
+		const cookies = await authedPage.context().cookies();
+		const sessionCookie = cookies.find((c) => c.name === 'session_id');
 		await authedPage.context().addCookies([
 			{
 				name: 'flash_message',
 				value: encodeURIComponent('Unable to open billing portal right now. Please try again.'),
-				domain: 'localhost',
+				domain: sessionCookie.domain,
 				path: '/',
 				sameSite: 'Lax',
 			},
