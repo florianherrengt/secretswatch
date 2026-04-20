@@ -15,3 +15,13 @@ if ! npm run test; then
 	echo "ERROR: Unit tests failed. Fix tests before committing."
 	exit 1
 fi
+
+# Prettier check on staged files
+echo "Checking prettier..."
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|mjs|cjs|json|yaml|yml|md|css|html|scss)$')
+if [ -n "$STAGED_FILES" ]; then
+	echo "$STAGED_FILES" | xargs npx prettier --check || {
+		echo "ERROR: Prettier check failed. Run 'npm run format' to fix formatting."
+		exit 1
+	}
+fi

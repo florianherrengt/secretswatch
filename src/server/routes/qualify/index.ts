@@ -1,23 +1,23 @@
-import { z } from "zod";
-import { Hono } from "hono";
-import type { Context } from "hono";
-import { render } from "../../../lib/response.js";
-import { qualifyDomain } from "../../../pipeline/qualifyDomain.js";
+import { z } from 'zod';
+import { Hono } from 'hono';
+import type { Context } from 'hono';
+import { render } from '../../../lib/response.js';
+import { qualifyDomain } from '../../../pipeline/qualifyDomain.js';
 import {
 	QualifyInputPage,
 	QualifyResultPage,
 	qualifyInputPagePropsSchema,
-	qualifyResultPagePropsSchema
-} from "../../../views/pages/qualify.js";
+	qualifyResultPagePropsSchema,
+} from '../../../views/pages/qualify.js';
 
 const qualifyRoutes = new Hono();
 
 const qualifyFormSchema = z.object({
-	domain: z.string().min(1)
+	domain: z.string().min(1),
 });
 
 const qualifyQuerySchema = z.object({
-	domain: z.string().optional()
+	domain: z.string().optional(),
 });
 
 const normalizeSubmittedDomain = z
@@ -27,7 +27,7 @@ const normalizeSubmittedDomain = z
 	.implement((rawDomain) => {
 		const trimmed = rawDomain.trim();
 
-		if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+		if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
 			const parsedUrl = (() => {
 				try {
 					return new URL(trimmed);
@@ -37,10 +37,10 @@ const normalizeSubmittedDomain = z
 			})();
 
 			if (!parsedUrl) {
-				return trimmed.replace(/^https?:\/\//i, "");
+				return trimmed.replace(/^https?:\/\//i, '');
 			}
 
-			const normalizedPath = parsedUrl.pathname === "/" ? "" : parsedUrl.pathname;
+			const normalizedPath = parsedUrl.pathname === '/' ? '' : parsedUrl.pathname;
 			return `${parsedUrl.host}${normalizedPath}${parsedUrl.search}`;
 		}
 
@@ -48,7 +48,7 @@ const normalizeSubmittedDomain = z
 	});
 
 qualifyRoutes.get(
-	"/",
+	'/',
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -58,7 +58,7 @@ qualifyRoutes.get(
 
 			if (!parsedQuery.success) {
 				const viewProps = qualifyInputPagePropsSchema.parse({
-					errorMessage: "Invalid query input."
+					errorMessage: 'Invalid query input.',
 				});
 				return c.html(render(QualifyInputPage, viewProps), 400);
 			}
@@ -70,8 +70,8 @@ qualifyRoutes.get(
 
 			if (parsedQuery.data.domain.trim().length === 0) {
 				const viewProps = qualifyInputPagePropsSchema.parse({
-					errorMessage: "Invalid domain input.",
-					defaultDomain: parsedQuery.data.domain
+					errorMessage: 'Invalid domain input.',
+					defaultDomain: parsedQuery.data.domain,
 				});
 
 				return c.html(render(QualifyInputPage, viewProps), 400);
@@ -82,15 +82,15 @@ qualifyRoutes.get(
 			const viewProps = qualifyResultPagePropsSchema.parse({
 				domain: normalizedDomain,
 				isQualified: qualification.isQualified,
-				reasons: qualification.reasons
+				reasons: qualification.reasons,
 			});
 
 			return c.html(render(QualifyResultPage, viewProps));
-		})
+		}),
 );
 
 qualifyRoutes.post(
-	"/",
+	'/',
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -98,13 +98,13 @@ qualifyRoutes.post(
 		.implement(async (c) => {
 			const body = await c.req.parseBody();
 			const parsedForm = qualifyFormSchema.safeParse({
-				domain: typeof body.domain === "string" ? body.domain : ""
+				domain: typeof body.domain === 'string' ? body.domain : '',
 			});
 
 			if (!parsedForm.success) {
 				const viewProps = qualifyInputPagePropsSchema.parse({
-					errorMessage: "Invalid domain input.",
-					defaultDomain: typeof body.domain === "string" ? body.domain : ""
+					errorMessage: 'Invalid domain input.',
+					defaultDomain: typeof body.domain === 'string' ? body.domain : '',
 				});
 
 				return c.html(render(QualifyInputPage, viewProps), 400);
@@ -114,7 +114,7 @@ qualifyRoutes.post(
 			const query = new URLSearchParams({ domain: normalizedDomain }).toString();
 
 			return c.redirect(`/qualify?${query}`, 302);
-		})
+		}),
 );
 
 export default qualifyRoutes;

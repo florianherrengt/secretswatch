@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { ScriptDetection } from "../../shared/detection.js";
+import { z } from 'zod';
+import type { ScriptDetection } from '../../shared/detection.js';
 
 export const findCredentialUrlDetections = z
 	.function()
@@ -10,9 +10,9 @@ export const findCredentialUrlDetections = z
 		const credentialUrlRegex = /\bhttps?:\/\/[^\s/@:]+:[^\s/@]+@[^\s"'<>]+/g;
 
 		for (const match of body.matchAll(credentialUrlRegex)) {
-			const value = match[0] ?? "";
+			const value = match[0] ?? '';
 
-			if (value.length === 0 || typeof match.index !== "number") {
+			if (value.length === 0 || typeof match.index !== 'number') {
 				continue;
 			}
 
@@ -22,7 +22,7 @@ export const findCredentialUrlDetections = z
 			detections.push({
 				value,
 				start,
-				end
+				end,
 			});
 		}
 

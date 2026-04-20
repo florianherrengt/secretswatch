@@ -1,11 +1,11 @@
-import { Queue } from "bullmq";
-import { z } from "zod";
-import { scanQueueJobDataSchema, type ScanQueueJobData } from "./scanJob.js";
-import { ioredisClient } from "./redis.js";
+import { Queue } from 'bullmq';
+import { z } from 'zod';
+import { scanQueueJobDataSchema, type ScanQueueJobData } from './scanJob.js';
+import { ioredisClient } from './redis.js';
 
-export const scanQueueName = "scanQueue";
+export const scanQueueName = 'scanQueue';
 export const scanQueue = new Queue<ScanQueueJobData>(scanQueueName, {
-	connection: ioredisClient
+	connection: ioredisClient,
 });
 
 export const enqueueScanJob = z
@@ -15,7 +15,7 @@ export const enqueueScanJob = z
 	.implement(async (scanId, jobData) => {
 		const payload = scanQueueJobDataSchema.parse(jobData);
 
-		await scanQueue.add("scanDomain", payload, {
-			jobId: scanId
+		await scanQueue.add('scanDomain', payload, {
+			jobId: scanId,
 		});
 	});

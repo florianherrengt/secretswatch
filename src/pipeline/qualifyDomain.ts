@@ -1,12 +1,12 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const QualifyDomainInput = z.object({
-	domain: z.string()
+	domain: z.string(),
 });
 
 export const QualifyDomainOutput = z.object({
 	isQualified: z.boolean(),
-	reasons: z.array(z.string().min(1)).min(1)
+	reasons: z.array(z.string().min(1)).min(1),
 });
 
 export type QualifyDomainInput = z.infer<typeof QualifyDomainInput>;
@@ -15,7 +15,7 @@ export type QualifyDomainOutput = z.infer<typeof QualifyDomainOutput>;
 const HOMEPAGE_TIMEOUT_MS = 2_500;
 const HOMEPAGE_MAX_BYTES = 128 * 1024;
 const MIN_HTML_CHARS = 180;
-const PARKING_MARKERS = ["domain is for sale", "buy this domain", "parking"];
+const PARKING_MARKERS = ['domain is for sale', 'buy this domain', 'parking'];
 
 const isValidHostname = z
 	.function()
@@ -23,9 +23,9 @@ const isValidHostname = z
 	.returns(z.boolean())
 	.implement((rawHostname) => {
 		const trimmed = rawHostname.trim().toLowerCase();
-		const hostname = trimmed.endsWith(".") ? trimmed.slice(0, -1) : trimmed;
+		const hostname = trimmed.endsWith('.') ? trimmed.slice(0, -1) : trimmed;
 
-		if (hostname === "localhost") {
+		if (hostname === 'localhost') {
 			return true;
 		}
 
@@ -34,19 +34,19 @@ const isValidHostname = z
 		}
 
 		if (
-			hostname.includes("/") ||
-			hostname.includes("?") ||
-			hostname.includes("#") ||
-			hostname.includes("@") ||
-			hostname.includes(":") ||
-			hostname.includes("..") ||
-			hostname.startsWith(".") ||
-			hostname.endsWith(".")
+			hostname.includes('/') ||
+			hostname.includes('?') ||
+			hostname.includes('#') ||
+			hostname.includes('@') ||
+			hostname.includes(':') ||
+			hostname.includes('..') ||
+			hostname.startsWith('.') ||
+			hostname.endsWith('.')
 		) {
 			return false;
 		}
 
-		const labels = hostname.split(".");
+		const labels = hostname.split('.');
 
 		if (labels.length < 2) {
 			return false;
@@ -57,14 +57,14 @@ const isValidHostname = z
 				return false;
 			}
 
-			if (label.startsWith("-") || label.endsWith("-")) {
+			if (label.startsWith('-') || label.endsWith('-')) {
 				return false;
 			}
 
 			for (const char of label) {
-				const isLower = char >= "a" && char <= "z";
-				const isNumber = char >= "0" && char <= "9";
-				const isDash = char === "-";
+				const isLower = char >= 'a' && char <= 'z';
+				const isNumber = char >= '0' && char <= '9';
+				const isDash = char === '-';
 
 				if (!isLower && !isNumber && !isDash) {
 					return false;
@@ -82,7 +82,7 @@ const normalizeQualificationTarget = z
 	.implement((rawInput) => {
 		const input = rawInput.trim();
 
-		if (input.length === 0 || input.includes("://")) {
+		if (input.length === 0 || input.includes('://')) {
 			return null;
 		}
 
@@ -111,16 +111,16 @@ const normalizeQualificationTarget = z
 		}
 
 		targetUrl.hostname = normalizedHostname;
-		targetUrl.hash = "";
+		targetUrl.hash = '';
 
 		if (targetUrl.pathname.length === 0) {
-			targetUrl.pathname = "/";
+			targetUrl.pathname = '/';
 		}
 
-		if (normalizedHostname === "localhost" || normalizedHostname.endsWith(".localhost")) {
-			targetUrl.protocol = "http:";
+		if (normalizedHostname === 'localhost' || normalizedHostname.endsWith('.localhost')) {
+			targetUrl.protocol = 'http:';
 		} else {
-			targetUrl.protocol = "https:";
+			targetUrl.protocol = 'https:';
 		}
 
 		return targetUrl.toString();
@@ -142,7 +142,7 @@ const readResponseTextWithLimit = z
 		const reader = response.body.getReader();
 		const decoder = new TextDecoder();
 		let bytesRead = 0; // eslint-disable-line custom/no-mutable-variables
-		let body = ""; // eslint-disable-line custom/no-mutable-variables
+		let body = ''; // eslint-disable-line custom/no-mutable-variables
 
 		while (true) {
 			let chunkResult; // eslint-disable-line custom/no-mutable-variables
@@ -184,44 +184,44 @@ const fetchHomepage = z
 	.args(z.string().url())
 	.returns(
 		z.promise(
-			z.discriminatedUnion("kind", [
-				z.object({ kind: z.literal("fetch_failed") }),
-				z.object({ kind: z.literal("not_html"), finalUrl: z.string().url() }),
-				z.object({ kind: z.literal("ok"), finalUrl: z.string().url(), body: z.string() })
-			])
-		)
+			z.discriminatedUnion('kind', [
+				z.object({ kind: z.literal('fetch_failed') }),
+				z.object({ kind: z.literal('not_html'), finalUrl: z.string().url() }),
+				z.object({ kind: z.literal('ok'), finalUrl: z.string().url(), body: z.string() }),
+			]),
+		),
 	)
 	.implement(async (url) => {
 		const response = await fetch(url, {
-			method: "GET",
+			method: 'GET',
 			signal: AbortSignal.timeout(HOMEPAGE_TIMEOUT_MS),
-			redirect: "follow"
+			redirect: 'follow',
 		}).catch(() => null);
 
 		if (!response) {
-			return { kind: "fetch_failed" };
+			return { kind: 'fetch_failed' };
 		}
 
 		if (!response.ok && response.status !== 206) {
-			return { kind: "fetch_failed" };
+			return { kind: 'fetch_failed' };
 		}
 
-		const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+		const contentType = (response.headers.get('content-type') ?? '').toLowerCase();
 
-		if (!contentType.includes("text/html")) {
-			return { kind: "not_html", finalUrl: response.url };
+		if (!contentType.includes('text/html')) {
+			return { kind: 'not_html', finalUrl: response.url };
 		}
 
 		const body = await readResponseTextWithLimit(response, HOMEPAGE_MAX_BYTES);
 
 		if (body === null) {
-			return { kind: "fetch_failed" };
+			return { kind: 'fetch_failed' };
 		}
 
 		return {
-			kind: "ok",
+			kind: 'ok',
 			finalUrl: response.url,
-			body
+			body,
 		};
 	});
 
@@ -230,11 +230,11 @@ const normalizeComparablePath = z
 	.args(z.string())
 	.returns(z.string())
 	.implement((path) => {
-		if (path === "/") {
-			return "/";
+		if (path === '/') {
+			return '/';
 		}
 
-		return path.replace(/\/+$/, "");
+		return path.replace(/\/+$/, '');
 	});
 
 const isFinalUrlWithinRequestedPath = z
@@ -244,7 +244,7 @@ const isFinalUrlWithinRequestedPath = z
 	.implement((requestedUrl, finalUrl) => {
 		const requestedPath = normalizeComparablePath(new URL(requestedUrl).pathname);
 
-		if (requestedPath === "/") {
+		if (requestedPath === '/') {
 			return true;
 		}
 
@@ -276,30 +276,30 @@ export const qualifyDomain = z
 		if (targetUrl === null) {
 			return {
 				isQualified: false,
-				reasons: ["Failed: invalid domain input"]
+				reasons: ['Failed: invalid domain input'],
 			};
 		}
 
 		const homepage = await fetchHomepage(targetUrl);
 
-		if (homepage.kind === "fetch_failed") {
+		if (homepage.kind === 'fetch_failed') {
 			return {
 				isQualified: false,
-				reasons: ["Failed: could not fetch homepage"]
+				reasons: ['Failed: could not fetch homepage'],
 			};
 		}
 
 		if (!isFinalUrlWithinRequestedPath(targetUrl, homepage.finalUrl)) {
 			return {
 				isQualified: false,
-				reasons: ["Failed: redirected outside requested path"]
+				reasons: ['Failed: redirected outside requested path'],
 			};
 		}
 
-		if (homepage.kind === "not_html") {
+		if (homepage.kind === 'not_html') {
 			return {
 				isQualified: false,
-				reasons: ["Failed: response is not HTML"]
+				reasons: ['Failed: response is not HTML'],
 			};
 		}
 
@@ -308,33 +308,33 @@ export const qualifyDomain = z
 		if (trimmedHtml.length === 0) {
 			return {
 				isQualified: false,
-				reasons: ["Failed: empty HTML response"]
+				reasons: ['Failed: empty HTML response'],
 			};
 		}
 
 		const reasons: string[] = [];
 
-		if (!trimmedHtml.toLowerCase().includes("<script")) {
-			reasons.push("Failed: no <script> tag found");
+		if (!trimmedHtml.toLowerCase().includes('<script')) {
+			reasons.push('Failed: no <script> tag found');
 		}
 
 		if (isParkingLikePage(trimmedHtml)) {
-			reasons.push("Failed: detected parking page");
+			reasons.push('Failed: detected parking page');
 		}
 
 		if (trimmedHtml.length < MIN_HTML_CHARS) {
-			reasons.push("Failed: HTML too small");
+			reasons.push('Failed: HTML too small');
 		}
 
 		if (reasons.length > 0) {
 			return {
 				isQualified: false,
-				reasons
+				reasons,
 			};
 		}
 
 		return {
 			isQualified: true,
-			reasons: ["Qualified: HTML contains scripts and passes all checks"]
+			reasons: ['Qualified: HTML contains scripts and passes all checks'],
 		};
 	});

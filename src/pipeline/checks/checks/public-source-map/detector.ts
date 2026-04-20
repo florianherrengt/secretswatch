@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { SourceMapProbe } from "../../contracts.js";
+import { z } from 'zod';
+import type { SourceMapProbe } from '../../contracts.js';
 
 export const filterAccessibleSourceMaps = z
 	.function()

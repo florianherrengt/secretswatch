@@ -1,16 +1,16 @@
-import { z } from "zod";
-import type { ScriptDetection } from "../../shared/detection.js";
+import { z } from 'zod';
+import type { ScriptDetection } from '../../shared/detection.js';
 
 const TOKEN_KEYS: readonly string[] = [
-	"token",
-	"jwttoken",
-	"jwt",
-	"accesstoken",
-	"refreshtoken",
-	"idtoken",
-	"authtoken",
-	"sessiontoken",
-	"bearertoken"
+	'token',
+	'jwttoken',
+	'jwt',
+	'accesstoken',
+	'refreshtoken',
+	'idtoken',
+	'authtoken',
+	'sessiontoken',
+	'bearertoken',
 ];
 
 const tokenKeySet = new Set(TOKEN_KEYS);
@@ -22,7 +22,7 @@ const normalizeKey = z
 	.args(z.string())
 	.returns(z.string())
 	.implement((raw) => {
-		return raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+		return raw.toLowerCase().replace(/[^a-z0-9]/g, '');
 	});
 
 const extractToken = z
@@ -31,8 +31,8 @@ const extractToken = z
 	.returns(
 		z.object({
 			text: z.string(),
-			isLiteral: z.boolean()
-		})
+			isLiteral: z.boolean(),
+		}),
 	)
 	.implement((raw) => {
 		const trimmed = raw.trim();
@@ -44,11 +44,11 @@ const extractToken = z
 			return { text: trimmed.slice(1, -1), isLiteral: true };
 		}
 
-		if (trimmed.startsWith("`") && trimmed.endsWith("`")) {
+		if (trimmed.startsWith('`') && trimmed.endsWith('`')) {
 			const content = trimmed.slice(1, -1);
 
-			if (content.includes("${")) {
-				return { text: "", isLiteral: true };
+			if (content.includes('${')) {
+				return { text: '', isLiteral: true };
 			}
 
 			return { text: content, isLiteral: true };
@@ -62,21 +62,17 @@ const isJwtLiteral = z
 	.args(z.string())
 	.returns(z.boolean())
 	.implement((value) => {
-		if (!value.startsWith("eyJ")) {
+		if (!value.startsWith('eyJ')) {
 			return false;
 		}
 
-		const segments = value.split(".");
+		const segments = value.split('.');
 
 		if (segments.length !== 3) {
 			return false;
 		}
 
-		if (
-			segments[0].length < 10 ||
-			segments[1].length < 10 ||
-			segments[2].length < 16
-		) {
+		if (segments[0].length < 10 || segments[1].length < 10 || segments[2].length < 16) {
 			return false;
 		}
 
@@ -100,11 +96,7 @@ const isTokenLikeCandidate = z
 	.args(z.string())
 	.returns(z.boolean())
 	.implement((candidate) => {
-		return (
-			tokenKeySet.has(candidate) ||
-			candidate.includes("token") ||
-			candidate.includes("jwt")
-		);
+		return tokenKeySet.has(candidate) || candidate.includes('token') || candidate.includes('jwt');
 	});
 
 const matchesRule = z
@@ -145,30 +137,30 @@ const getValueType = z
 	.returns(z.string())
 	.implement((rawValueText, valueIsLiteral) => {
 		if (valueIsLiteral && isJwtLiteral(rawValueText)) {
-			return "jwt-literal";
+			return 'jwt-literal';
 		}
 
 		if (valueIsLiteral) {
-			return "literal";
+			return 'literal';
 		}
 
-		return "identifier";
+		return 'identifier';
 	});
 
 const quotedTokenPattern = `"[^"]*"|'[^']*'`;
-const templateTokenPattern = "`[^`]*`";
-const identifierPattern = "[a-zA-Z_$][a-zA-Z0-9_$]*";
+const templateTokenPattern = '`[^`]*`';
+const identifierPattern = '[a-zA-Z_$][a-zA-Z0-9_$]*';
 const memberExpressionPattern = `${identifierPattern}(?:\\s*(?:\\.\\s*${identifierPattern}|\\[\\s*(?:${quotedTokenPattern}|${identifierPattern})\\s*\\]))*`;
 const tokenPattern = `(?:${quotedTokenPattern}|${templateTokenPattern}|${memberExpressionPattern})`;
 
 const setItemRegex = new RegExp(
 	`(?:(?:window|globalThis)\\s*\\.\\s*)?localStorage\\s*\\.\\s*setItem\\s*\\(\\s*(${tokenPattern})\\s*,\\s*(${tokenPattern})\\s*\\)`,
-	"gi"
+	'gi',
 );
 
 const bracketAssignRegex = new RegExp(
 	`(?:(?:window|globalThis)\\s*\\.\\s*)?localStorage\\s*\\[\\s*(${tokenPattern})\\s*\\]\\s*=\\s*(${tokenPattern})`,
-	"gi"
+	'gi',
 );
 
 interface RawMatch {
@@ -189,14 +181,14 @@ const collectMatches = z
 		regex.lastIndex = 0;
 
 		for (const match of body.matchAll(regex)) {
-			const rawKey = match[1] ?? "";
-			const rawValue = match[2] ?? "";
+			const rawKey = match[1] ?? '';
+			const rawValue = match[2] ?? '';
 
 			if (rawKey.length === 0 || rawValue.length === 0) {
 				continue;
 			}
 
-			if (typeof match.index !== "number") {
+			if (typeof match.index !== 'number') {
 				continue;
 			}
 
@@ -205,7 +197,7 @@ const collectMatches = z
 				rawKey,
 				rawValue,
 				start: match.index,
-				end: match.index + match[0].length
+				end: match.index + match[0].length,
 			});
 		}
 
@@ -221,8 +213,8 @@ export const findLocalStorageJwtDetections = z
 		const seenPositions = new Set<string>();
 
 		const allMatches: RawMatch[] = [
-			...collectMatches(setItemRegex, body, "localStorage.setItem"),
-			...collectMatches(bracketAssignRegex, body, "localStorage.bracket")
+			...collectMatches(setItemRegex, body, 'localStorage.setItem'),
+			...collectMatches(bracketAssignRegex, body, 'localStorage.bracket'),
 		];
 
 		for (const rawMatch of allMatches) {
@@ -252,7 +244,7 @@ export const findLocalStorageJwtDetections = z
 			detections.push({
 				value: signature,
 				start: rawMatch.start,
-				end: rawMatch.end
+				end: rawMatch.end,
 			});
 		}
 

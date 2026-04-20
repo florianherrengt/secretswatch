@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { checkFindingSchema } from "../contracts.js";
+import { z } from 'zod';
+import { checkFindingSchema } from '../contracts.js';
 
 export const dedupeFindings = z
 	.function()

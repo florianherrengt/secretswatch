@@ -154,17 +154,20 @@ The agent:
 The following references are **already translated into constraints**:
 
 **Stripe**
+
 - Generous spacing between sections (≥ 32px)
 - Clear typography hierarchy
 - Minimal borders
 - Readable tables
 
 **Linear**
+
 - Compact, dense lists and tables
 - Strong alignment and grid discipline
 - Minimal color usage
 
 **Vercel**
+
 - Minimal UI
 - No visual noise
 - Neutral-first color palette
@@ -314,14 +317,17 @@ Use multiline ONLY for:
 Every data-driven component MUST support:
 
 **Loading**
+
 - Use skeletons
 - NEVER use spinners alone
 
 **Empty State**
+
 - Explain why empty
 - Provide clear next action
 
 **Error State**
+
 - Explain what happened
 - Provide retry or recovery action
 

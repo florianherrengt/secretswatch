@@ -12,6 +12,7 @@
 Finds domains from certificate transparency logs.
 
 **How to use:**
+
 1. Go to `/source`
 2. Select "crt.sh"
 3. Enter a TLD suffix (e.g., `io`, `com`, `dev`)
@@ -25,12 +26,14 @@ Finds domains from certificate transparency logs.
 Finds domains from newly launched products on Product Hunt.
 
 **Setup required:**
+
 ```bash
 # Add to your .env file
 PRODUCT_HUNT_TOKEN=your_product_hunt_api_token
 ```
 
 **How to use:**
+
 1. Get a Product Hunt API token
 2. Add `PRODUCT_HUNT_TOKEN` to your `.env` file
 3. Restart the server
@@ -75,21 +78,25 @@ Use debug pages to troubleshoot issues:
 ### Common Issues
 
 **Product Hunt returns no domains:**
+
 - Check `PRODUCT_HUNT_TOKEN` is set in `.env`
 - Verify the token is valid
 - Check debug page for error messages
 
 **Domains missing after normalization:**
+
 - Check "Skipped domains" section in debug
 - Look at transformation trace for failure reasons
 
 **Pipeline runs but no scans enqueued:**
+
 - Check qualification results in pipeline output
 - Domains may be disqualified for various reasons
 
 ## Qualify Button
 
 On debug pages, each domain has a "Qualify" button. Clicking it:
+
 - Opens the qualification page for that specific domain
 - Shows why it was qualified or rejected
 - Allows manual testing of the qualification logic
@@ -97,6 +104,7 @@ On debug pages, each domain has a "Qualify" button. Clicking it:
 ## Environment Variables
 
 **Required for Product Hunt:**
+
 ```bash
 PRODUCT_HUNT_TOKEN=your_token_here
 ```

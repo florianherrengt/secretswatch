@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { checkRunInputSchema, checkRunOutputSchema } from "../../contracts.js";
-import { mapDetectionsToFindings } from "../../shared/detection.js";
-import { dedupeFindings } from "../../shared/dedupe.js";
-import { findGenericSecretDetections } from "./detector.js";
+import { z } from 'zod';
+import { checkRunInputSchema, checkRunOutputSchema } from '../../contracts.js';
+import { mapDetectionsToFindings } from '../../shared/detection.js';
+import { dedupeFindings } from '../../shared/dedupe.js';
+import { findGenericSecretDetections } from './detector.js';
 
 export const runGenericSecretCheck = z
 	.function()
@@ -13,11 +13,11 @@ export const runGenericSecretCheck = z
 			return mapDetectionsToFindings(
 				script.file,
 				script.content,
-				findGenericSecretDetections(script.content)
+				findGenericSecretDetections(script.content),
 			);
 		});
 
 		return {
-			findings: dedupeFindings(findings)
+			findings: dedupeFindings(findings),
 		};
 	});

@@ -1,34 +1,38 @@
-import { z } from "zod";
-import { randomBytes } from "node:crypto";
-import { confirmTokenStore, CONFIRM_TOKEN_TTL_SECONDS } from "../db/confirmTokenStore.js";
+import { z } from 'zod';
+import { randomBytes } from 'node:crypto';
+import { confirmTokenStore, CONFIRM_TOKEN_TTL_SECONDS } from '../db/confirmTokenStore.js';
 
-export const confirmActionSchema = z.enum(["delete_account", "delete_domain"]);
+export const confirmActionSchema = z.enum(['delete_account', 'delete_domain']);
 export type ConfirmAction = z.infer<typeof confirmActionSchema>;
 
-export const confirmActionConfig: Record<ConfirmAction, {
-	title: string;
-	message: string;
-	confirmLabel: string;
-	cancelLabel: string;
-}> = {
+export const confirmActionConfig: Record<
+	ConfirmAction,
+	{
+		title: string;
+		message: string;
+		confirmLabel: string;
+		cancelLabel: string;
+	}
+> = {
 	delete_account: {
-		title: "Delete Account",
-		message: "Delete your account? This action cannot be undone. All your data will be permanently removed.",
-		confirmLabel: "Delete Account",
-		cancelLabel: "Cancel"
+		title: 'Delete Account',
+		message:
+			'Delete your account? This action cannot be undone. All your data will be permanently removed.',
+		confirmLabel: 'Delete Account',
+		cancelLabel: 'Cancel',
 	},
 	delete_domain: {
-		title: "Delete Domain",
-		message: "Delete this domain? This action cannot be undone.",
-		confirmLabel: "Delete",
-		cancelLabel: "Keep Domain"
-	}
+		title: 'Delete Domain',
+		message: 'Delete this domain? This action cannot be undone.',
+		confirmLabel: 'Delete',
+		cancelLabel: 'Keep Domain',
+	},
 };
 
 const confirmTokenPayloadSchema = z.object({
 	action: confirmActionSchema,
 	context: z.record(z.string(), z.string()),
-	userId: z.string().uuid()
+	userId: z.string().uuid(),
 });
 
 export type ConfirmTokenPayload = z.infer<typeof confirmTokenPayloadSchema>;
@@ -38,7 +42,7 @@ export const generateConfirmToken = z
 	.args(confirmActionSchema, z.string().uuid(), z.record(z.string(), z.string()).optional())
 	.returns(z.promise(z.string()))
 	.implement(async (action, userId, context) => {
-		const token = randomBytes(32).toString("hex");
+		const token = randomBytes(32).toString('hex');
 		const payload = { action, context: context ?? {}, userId };
 		await confirmTokenStore.set(token, payload, CONFIRM_TOKEN_TTL_SECONDS);
 

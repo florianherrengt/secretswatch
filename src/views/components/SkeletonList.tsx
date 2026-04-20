@@ -1,9 +1,9 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
-import { ScanCard } from "./ScanCard.js";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
+import { ScanCard } from './ScanCard.js';
 
 const skeletonListPropsSchema = z.object({
-	rows: z.number().int().min(1).max(6).optional()
+	rows: z.number().int().min(1).max(6).optional(),
 });
 
 type SkeletonListProps = z.infer<typeof skeletonListPropsSchema>;

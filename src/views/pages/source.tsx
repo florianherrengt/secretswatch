@@ -1,15 +1,18 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
-import { sourcePipelineResultSchema, sourcePreviewResultSchema } from "../../pipeline/sources/index.js";
-import { ScanCard } from "../components/ScanCard.js";
-import { Section } from "../components/Section.js";
-import { StatusBadge } from "../components/StatusBadge.js";
-import { Layout } from "../layout.js";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
+import {
+	sourcePipelineResultSchema,
+	sourcePreviewResultSchema,
+} from '../../pipeline/sources/index.js';
+import { ScanCard } from '../components/ScanCard.js';
+import { Section } from '../components/Section.js';
+import { StatusBadge } from '../components/StatusBadge.js';
+import { Layout } from '../layout.js';
 
 export const sourceListItemSchema = z.object({
 	key: z.string(),
 	label: z.string(),
-	description: z.string()
+	description: z.string(),
 });
 
 export type SourceListItem = z.infer<typeof sourceListItemSchema>;
@@ -17,7 +20,7 @@ export type SourceListItem = z.infer<typeof sourceListItemSchema>;
 export const sourceInputPagePropsSchema = z.object({
 	sources: z.array(sourceListItemSchema),
 	selectedSourceKey: z.string().optional(),
-	errorMessage: z.string().optional()
+	errorMessage: z.string().optional(),
 });
 
 export type SourceInputPageProps = z.infer<typeof sourceInputPagePropsSchema>;
@@ -31,9 +34,14 @@ export const SourceInputPage: FC<SourceInputPageProps> = z
 			<Layout title="Domain Sourcing">
 				<div class="space-y-6">
 					<h1 class="text-xl font-semibold text-foreground">Domain Sourcing</h1>
-					<Section title="Sources" description="Select a source, preview domains, and run the full pipeline.">
+					<Section
+						title="Sources"
+						description="Select a source, preview domains, and run the full pipeline."
+					>
 						{errorMessage ? (
-							<p class="rounded-md border border-error/25 bg-error/10 px-3 py-2 text-sm text-error">{errorMessage}</p>
+							<p class="rounded-md border border-error/25 bg-error/10 px-3 py-2 text-sm text-error">
+								{errorMessage}
+							</p>
 						) : null}
 						<div class="space-y-3">
 							{sources.map((s) => {
@@ -44,29 +52,66 @@ export const SourceInputPage: FC<SourceInputPageProps> = z
 										key={s.key}
 										title={s.label}
 										description={s.description}
-										head={isSelected ? <StatusBadge status="running" label="selected" /> : undefined}
+										head={
+											isSelected ? <StatusBadge status="running" label="selected" /> : undefined
+										}
 									>
 										{isSelected ? (
 											<form method="get" action="/source/preview" class="space-y-3">
 												<input type="hidden" name="source" value={s.key} />
-												{s.key === "crtsh" ? (
+												{s.key === 'crtsh' ? (
 													<>
-														<label for={`${s.key}-tld`} class="block text-sm font-medium text-foreground">TLD suffix (e.g. io)</label>
-														<input id={`${s.key}-tld`} name="tld" type="text" required placeholder="io" class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+														<label
+															for={`${s.key}-tld`}
+															class="block text-sm font-medium text-foreground"
+														>
+															TLD suffix (e.g. io)
+														</label>
+														<input
+															id={`${s.key}-tld`}
+															name="tld"
+															type="text"
+															required
+															placeholder="io"
+															class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+														/>
 													</>
 												) : null}
-												{s.key === "producthunt" ? (
+												{s.key === 'producthunt' ? (
 													<>
-														<label for={`${s.key}-maxPages`} class="block text-sm font-medium text-foreground">Max pages to fetch (1-20)</label>
-														<input id={`${s.key}-maxPages`} name="maxPages" type="number" min="1" max="20" defaultValue="10" class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+														<label
+															for={`${s.key}-maxPages`}
+															class="block text-sm font-medium text-foreground"
+														>
+															Max pages to fetch (1-20)
+														</label>
+														<input
+															id={`${s.key}-maxPages`}
+															name="maxPages"
+															type="number"
+															min="1"
+															max="20"
+															defaultValue="10"
+															class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+														/>
 													</>
 												) : null}
-												<button type="submit" class="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted">Preview domains</button>
+												<button
+													type="submit"
+													class="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+												>
+													Preview domains
+												</button>
 											</form>
 										) : (
 											<form method="get" action="/source">
 												<input type="hidden" name="source" value={s.key} />
-												<button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Select</button>
+												<button
+													type="submit"
+													class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+												>
+													Select
+												</button>
 											</form>
 										)}
 
@@ -74,11 +119,42 @@ export const SourceInputPage: FC<SourceInputPageProps> = z
 											<>
 												<form method="post" action="/source" class="space-y-2">
 													<input type="hidden" name="source" value={s.key} />
-													{s.key === "crtsh" ? <input id={`${s.key}-tld-pipeline`} name="tld" type="text" required placeholder="io" class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" /> : null}
-													{s.key === "producthunt" ? <input id={`${s.key}-maxPages-pipeline`} name="maxPages" type="number" min="1" max="20" defaultValue="10" class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" /> : null}
-													<button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Run pipeline</button>
+													{s.key === 'crtsh' ? (
+														<input
+															id={`${s.key}-tld-pipeline`}
+															name="tld"
+															type="text"
+															required
+															placeholder="io"
+															class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+														/>
+													) : null}
+													{s.key === 'producthunt' ? (
+														<input
+															id={`${s.key}-maxPages-pipeline`}
+															name="maxPages"
+															type="number"
+															min="1"
+															max="20"
+															defaultValue="10"
+															class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+														/>
+													) : null}
+													<button
+														type="submit"
+														class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+													>
+														Run pipeline
+													</button>
 												</form>
-												<p class="text-sm"><a href={`/debug/sources/${s.key}`} class="underline text-muted-foreground">Debug {s.label}</a></p>
+												<p class="text-sm">
+													<a
+														href={`/debug/sources/${s.key}`}
+														class="underline text-muted-foreground"
+													>
+														Debug {s.label}
+													</a>
+												</p>
 											</>
 										) : null}
 									</ScanCard>
@@ -93,7 +169,7 @@ export const SourceInputPage: FC<SourceInputPageProps> = z
 
 export const sourcePreviewPagePropsSchema = z.object({
 	source: sourceListItemSchema,
-	result: sourcePreviewResultSchema
+	result: sourcePreviewResultSchema,
 });
 
 export type SourcePreviewPageProps = z.infer<typeof sourcePreviewPagePropsSchema>;
@@ -125,9 +201,17 @@ export const SourcePreviewPage: FC<SourcePreviewPageProps> = z
 									{result.domains.map((domain) => {
 										const qualifyUrl = `/qualify?domain=${encodeURIComponent(domain)}`;
 										return (
-											<li key={domain} class="flex items-center justify-between rounded border border-muted px-2 py-1">
+											<li
+												key={domain}
+												class="flex items-center justify-between rounded border border-muted px-2 py-1"
+											>
 												<span class="truncate text-foreground">{domain}</span>
-												<a href={qualifyUrl} class="ml-2 shrink-0 rounded bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">qualify</a>
+												<a
+													href={qualifyUrl}
+													class="ml-2 shrink-0 rounded bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground"
+												>
+													qualify
+												</a>
 											</li>
 										);
 									})}
@@ -137,7 +221,11 @@ export const SourcePreviewPage: FC<SourcePreviewPageProps> = z
 							)}
 						</ScanCard>
 					</Section>
-					<p class="text-sm"><a href="/source" class="underline">Back to sourcing</a></p>
+					<p class="text-sm">
+						<a href="/source" class="underline">
+							Back to sourcing
+						</a>
+					</p>
 				</div>
 			</Layout>
 		);
@@ -145,7 +233,7 @@ export const SourcePreviewPage: FC<SourcePreviewPageProps> = z
 
 export const sourceResultPagePropsSchema = z.object({
 	source: sourceListItemSchema,
-	result: sourcePipelineResultSchema
+	result: sourcePipelineResultSchema,
 });
 
 export type SourceResultPageProps = z.infer<typeof sourceResultPagePropsSchema>;
@@ -165,17 +253,38 @@ export const SourceResultPage: FC<SourceResultPageProps> = z
 					<Section title="Pipeline Summary">
 						<ScanCard>
 							{result.fetchError ? (
-								<div class="rounded-md border border-error/25 bg-error/10 p-3 text-sm text-error"><strong>Fetch error:</strong> {result.fetchError}</div>
+								<div class="rounded-md border border-error/25 bg-error/10 p-3 text-sm text-error">
+									<strong>Fetch error:</strong> {result.fetchError}
+								</div>
 							) : null}
 							<div class="space-y-2 text-sm text-muted-foreground">
-								<p><span class="font-medium text-foreground">Fetch:</span> {result.fetchedEntries} entries</p>
-								<p><span class="font-medium text-foreground">Raw domains:</span> {result.rawDomains}</p>
-								<p><span class="font-medium text-foreground">Normalized:</span> {result.normalizedDomains}</p>
-								<p><span class="font-medium text-foreground">Already known:</span> {result.alreadyKnown}</p>
-								<p><span class="font-medium text-foreground">New domains:</span> {result.newDomains}</p>
-								<p><span class="font-medium text-foreground">Qualified:</span> {qualified.length}</p>
-								<p><span class="font-medium text-foreground">Rejected:</span> {rejected.length}</p>
-								<p><span class="font-medium text-foreground">Enqueued:</span> {result.enqueued}</p>
+								<p>
+									<span class="font-medium text-foreground">Fetch:</span> {result.fetchedEntries}{' '}
+									entries
+								</p>
+								<p>
+									<span class="font-medium text-foreground">Raw domains:</span> {result.rawDomains}
+								</p>
+								<p>
+									<span class="font-medium text-foreground">Normalized:</span>{' '}
+									{result.normalizedDomains}
+								</p>
+								<p>
+									<span class="font-medium text-foreground">Already known:</span>{' '}
+									{result.alreadyKnown}
+								</p>
+								<p>
+									<span class="font-medium text-foreground">New domains:</span> {result.newDomains}
+								</p>
+								<p>
+									<span class="font-medium text-foreground">Qualified:</span> {qualified.length}
+								</p>
+								<p>
+									<span class="font-medium text-foreground">Rejected:</span> {rejected.length}
+								</p>
+								<p>
+									<span class="font-medium text-foreground">Enqueued:</span> {result.enqueued}
+								</p>
 							</div>
 						</ScanCard>
 					</Section>
@@ -185,9 +294,15 @@ export const SourceResultPage: FC<SourceResultPageProps> = z
 							{result.qualificationResults.length > 0 ? (
 								<ul class="space-y-1 font-mono text-xs">
 									{result.qualificationResults.map((qr) => {
-										const primaryReason = qr.reasons[0] ?? "";
-										const shortReason = qr.isQualified ? "qualified" : primaryReason.replace("Failed: ", "").toLowerCase();
-										return <li key={qr.domain} class={qr.isQualified ? "text-success" : "text-error"}>{qr.domain} → {shortReason}</li>;
+										const primaryReason = qr.reasons[0] ?? '';
+										const shortReason = qr.isQualified
+											? 'qualified'
+											: primaryReason.replace('Failed: ', '').toLowerCase();
+										return (
+											<li key={qr.domain} class={qr.isQualified ? 'text-success' : 'text-error'}>
+												{qr.domain} → {shortReason}
+											</li>
+										);
 									})}
 								</ul>
 							) : (
@@ -198,17 +313,30 @@ export const SourceResultPage: FC<SourceResultPageProps> = z
 
 					{result.enqueueErrors.length > 0 ? (
 						<Section title="Queue Errors">
-							<ScanCard class="border-error/30 bg-error/5" head={<StatusBadge status="failed" label={`${result.enqueueErrors.length} errors`} />}>
+							<ScanCard
+								class="border-error/30 bg-error/5"
+								head={
+									<StatusBadge status="failed" label={`${result.enqueueErrors.length} errors`} />
+								}
+							>
 								<ul class="list-disc space-y-1 pl-6 font-mono text-xs text-error">
 									{result.enqueueErrors.map((e) => {
-										return <li key={e.domain}>{e.domain} - {e.error}</li>;
+										return (
+											<li key={e.domain}>
+												{e.domain} - {e.error}
+											</li>
+										);
 									})}
 								</ul>
 							</ScanCard>
 						</Section>
 					) : null}
 
-					<p class="text-sm"><a href="/source" class="underline">Run again</a></p>
+					<p class="text-sm">
+						<a href="/source" class="underline">
+							Run again
+						</a>
+					</p>
 				</div>
 			</Layout>
 		);

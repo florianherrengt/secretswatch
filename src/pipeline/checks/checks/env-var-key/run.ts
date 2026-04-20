@@ -1,8 +1,8 @@
-import { z } from "zod";
-import { checkRunInputSchema, checkRunOutputSchema } from "../../contracts.js";
-import { mapDetectionsToFindings } from "../../shared/detection.js";
-import { dedupeFindings } from "../../shared/dedupe.js";
-import { findEnvVarKeyDetections } from "./detector.js";
+import { z } from 'zod';
+import { checkRunInputSchema, checkRunOutputSchema } from '../../contracts.js';
+import { mapDetectionsToFindings } from '../../shared/detection.js';
+import { dedupeFindings } from '../../shared/dedupe.js';
+import { findEnvVarKeyDetections } from './detector.js';
 
 export const runEnvVarKeyCheck = z
 	.function()
@@ -13,11 +13,11 @@ export const runEnvVarKeyCheck = z
 			return mapDetectionsToFindings(
 				script.file,
 				script.content,
-				findEnvVarKeyDetections(script.content)
+				findEnvVarKeyDetections(script.content),
 			);
 		});
 
 		return {
-			findings: dedupeFindings(findings)
+			findings: dedupeFindings(findings),
 		};
 	});

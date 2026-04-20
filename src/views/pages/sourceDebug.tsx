@@ -1,14 +1,14 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
-import { sourceDebugResultSchema } from "../../pipeline/sources/index.js";
-import { ScanCard } from "../components/ScanCard.js";
-import { Section } from "../components/Section.js";
-import { Layout } from "../layout.js";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
+import { sourceDebugResultSchema } from '../../pipeline/sources/index.js';
+import { ScanCard } from '../components/ScanCard.js';
+import { Section } from '../components/Section.js';
+import { Layout } from '../layout.js';
 
 export const sourceListItemSchema = z.object({
 	key: z.string(),
 	label: z.string(),
-	description: z.string()
+	description: z.string(),
 });
 
 export type SourceListItem = z.infer<typeof sourceListItemSchema>;
@@ -18,8 +18,8 @@ export const sourceDebugPagePropsSchema = z.object({
 	result: sourceDebugResultSchema.nullable(),
 	input: z.object({
 		tld: z.string().optional(),
-		maxPages: z.number().int().optional()
-	})
+		maxPages: z.number().int().optional(),
+	}),
 });
 
 export type SourceDebugPageProps = z.infer<typeof sourceDebugPagePropsSchema>;
@@ -36,45 +36,51 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 					<Section title="Debug Input" description={source.description}>
 						<ScanCard>
 							<form method="post" action={`/debug/sources/${source.key}`} class="space-y-3">
-						<input type="hidden" name="source" value={source.key} />
-						{source.key === "crtsh" ? (
-							<>
-								<label for={`${source.key}-tld`} class="block text-sm font-medium text-foreground">
-									TLD suffix (e.g. io)
-								</label>
-								<input
-									id={`${source.key}-tld`}
-									name="tld"
-									type="text"
-									required
-									placeholder="io"
-									value={input.tld ?? ""}
-									class="w-48 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-								/>
-							</>
-						) : null}
-						{source.key === "producthunt" ? (
-							<>
-								<label for={`${source.key}-maxPages`} class="block text-sm font-medium text-foreground">
-									Max pages to fetch (1-20)
-								</label>
-								<input
-									id={`${source.key}-maxPages`}
-									name="maxPages"
-									type="number"
-									min="1"
-									max="20"
-									value={input.maxPages ?? 10}
-									class="w-48 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-								/>
-							</>
-						) : null}
-						<button
-							type="submit"
-							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-						>
-							Run debug
-						</button>
+								<input type="hidden" name="source" value={source.key} />
+								{source.key === 'crtsh' ? (
+									<>
+										<label
+											for={`${source.key}-tld`}
+											class="block text-sm font-medium text-foreground"
+										>
+											TLD suffix (e.g. io)
+										</label>
+										<input
+											id={`${source.key}-tld`}
+											name="tld"
+											type="text"
+											required
+											placeholder="io"
+											value={input.tld ?? ''}
+											class="w-48 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+										/>
+									</>
+								) : null}
+								{source.key === 'producthunt' ? (
+									<>
+										<label
+											for={`${source.key}-maxPages`}
+											class="block text-sm font-medium text-foreground"
+										>
+											Max pages to fetch (1-20)
+										</label>
+										<input
+											id={`${source.key}-maxPages`}
+											name="maxPages"
+											type="number"
+											min="1"
+											max="20"
+											value={input.maxPages ?? 10}
+											class="w-48 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+										/>
+									</>
+								) : null}
+								<button
+									type="submit"
+									class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+								>
+									Run debug
+								</button>
 							</form>
 						</ScanCard>
 					</Section>
@@ -121,7 +127,10 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 									</ScanCard>
 
 									{result.metadata.skips.length > 0 ? (
-										<ScanCard title={`Skipped Domains (${result.metadata.skips.length})`} class="border-warning/30 bg-warning/10">
+										<ScanCard
+											title={`Skipped Domains (${result.metadata.skips.length})`}
+											class="border-warning/30 bg-warning/10"
+										>
 											<ul class="mt-2 space-y-1 font-mono text-xs">
 												{result.metadata.skips.map((skip, index) => (
 													<li key={`${skip.domain}-${index}`} class="text-warning">
@@ -138,7 +147,10 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 												{result.domains.map((domain) => {
 													const qualifyUrl = `/qualify?domain=${encodeURIComponent(domain)}&source=${source.key}`;
 													return (
-														<li key={domain} class="flex items-center justify-between rounded border border-muted px-2 py-1">
+														<li
+															key={domain}
+															class="flex items-center justify-between rounded border border-muted px-2 py-1"
+														>
 															<span class="truncate">{domain}</span>
 															<a
 																href={qualifyUrl}
@@ -173,17 +185,21 @@ export const SourceDebugPage: FC<SourceDebugPageProps> = z
 													{result.transformations.slice(0, 50).map((t, i) => (
 														<tr key={i} class="border-t border-muted">
 															<td class="py-1 pr-4">{t.input}</td>
-															<td class="py-1 pr-4">{t.output ?? "null"}</td>
+															<td class="py-1 pr-4">{t.output ?? 'null'}</td>
 															<td class="py-1 pr-4">
-																<span class={
-																	t.status === "ok" ? "text-success" :
-																	t.status === "failed" ? "text-error" :
-																	"text-warning"
-																}>
+																<span
+																	class={
+																		t.status === 'ok'
+																			? 'text-success'
+																			: t.status === 'failed'
+																				? 'text-error'
+																				: 'text-warning'
+																	}
+																>
 																	{t.status}
 																</span>
 															</td>
-															<td class="py-1 text-muted-foreground">{t.reason ?? "-"}</td>
+															<td class="py-1 text-muted-foreground">{t.reason ?? '-'}</td>
 														</tr>
 													))}
 												</tbody>

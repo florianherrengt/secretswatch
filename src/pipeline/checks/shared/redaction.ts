@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const redactSecret = z
 	.function()
@@ -6,7 +6,7 @@ export const redactSecret = z
 	.returns(z.string())
 	.implement((value) => {
 		if (value.length <= 8) {
-			return "[REDACTED]";
+			return '[REDACTED]';
 		}
 
 		const prefix = value.slice(0, 4);

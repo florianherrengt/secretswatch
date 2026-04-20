@@ -1,27 +1,24 @@
-import { z } from "zod";
-import { inArray } from "drizzle-orm";
-import { db } from "../../server/db/client.js";
-import { domains } from "../../server/db/schema.js";
-import {
-	createScanForDomainId,
-	upsertDomainRecord
-} from "../../server/scan/scanJob.js";
-import { qualifyDomain } from "../qualifyDomain.js";
-import { crtshSource } from "./crtsh.js";
-import { productHuntSource } from "./producthunt.js";
+import { z } from 'zod';
+import { inArray } from 'drizzle-orm';
+import { db } from '../../server/db/client.js';
+import { domains } from '../../server/db/schema.js';
+import { createScanForDomainId, upsertDomainRecord } from '../../server/scan/scanJob.js';
+import { qualifyDomain } from '../qualifyDomain.js';
+import { crtshSource } from './crtsh.js';
+import { productHuntSource } from './producthunt.js';
 import type {
 	DomainSourceDefinition,
 	QualificationResult,
 	SourcePipelineResult,
-	SourcePreviewResult
-} from "./types.js";
+	SourcePreviewResult,
+} from './types.js';
 import {
 	qualificationResultSchema,
 	sourcePipelineResultSchema,
 	sourcePreviewResultSchema,
 	sourceDebugResultSchema,
-	debugTransformationSchema
-} from "./types.js";
+	debugTransformationSchema,
+} from './types.js';
 
 const sourceRegistry = new Map<string, DomainSourceDefinition>();
 
@@ -63,7 +60,7 @@ export const previewSource = z
 				sourceKey,
 				fetchError: `Unknown source: ${sourceKey}`,
 				fetchedEntries: 0,
-				domains: []
+				domains: [],
 			});
 		}
 
@@ -72,9 +69,9 @@ export const previewSource = z
 		if (!parsedInput.success) {
 			return sourcePreviewResultSchema.parse({
 				sourceKey,
-				fetchError: `Invalid input: ${parsedInput.error.issues[0]?.message ?? "unknown"}`,
+				fetchError: `Invalid input: ${parsedInput.error.issues[0]?.message ?? 'unknown'}`,
 				fetchedEntries: 0,
-				domains: []
+				domains: [],
 			});
 		}
 
@@ -85,14 +82,14 @@ export const previewSource = z
 				sourceKey,
 				fetchError: fetchResult.error,
 				fetchedEntries: 0,
-				domains: []
+				domains: [],
 			});
 		}
 
 		return sourcePreviewResultSchema.parse({
 			sourceKey,
 			fetchedEntries: fetchResult.fetchedEntries,
-			domains: fetchResult.domains
+			domains: fetchResult.domains,
 		});
 	});
 
@@ -114,7 +111,7 @@ export const runSourcePipeline = z
 				newDomains: 0,
 				qualificationResults: [],
 				enqueued: 0,
-				enqueueErrors: []
+				enqueueErrors: [],
 			});
 		}
 
@@ -123,7 +120,7 @@ export const runSourcePipeline = z
 		if (!parsedInput.success) {
 			return sourcePipelineResultSchema.parse({
 				sourceKey,
-				fetchError: `Invalid input: ${parsedInput.error.issues[0]?.message ?? "unknown"}`,
+				fetchError: `Invalid input: ${parsedInput.error.issues[0]?.message ?? 'unknown'}`,
 				fetchedEntries: 0,
 				rawDomains: 0,
 				normalizedDomains: 0,
@@ -131,7 +128,7 @@ export const runSourcePipeline = z
 				newDomains: 0,
 				qualificationResults: [],
 				enqueued: 0,
-				enqueueErrors: []
+				enqueueErrors: [],
 			});
 		}
 
@@ -148,7 +145,7 @@ export const runSourcePipeline = z
 				newDomains: 0,
 				qualificationResults: [],
 				enqueued: 0,
-				enqueueErrors: []
+				enqueueErrors: [],
 			});
 		}
 
@@ -168,7 +165,10 @@ export const runSourcePipeline = z
 
 		const existingRows: { hostname: string }[] =
 			normalizedList.length > 0
-				? await db.select({ hostname: domains.hostname }).from(domains).where(inArray(domains.hostname, normalizedList))
+				? await db
+						.select({ hostname: domains.hostname })
+						.from(domains)
+						.where(inArray(domains.hostname, normalizedList))
 				: [];
 
 		const knownHostnames = new Set(existingRows.map((r) => r.hostname));
@@ -181,7 +181,7 @@ export const runSourcePipeline = z
 			qualificationResults.push({
 				domain,
 				isQualified: result.isQualified,
-				reasons: result.reasons
+				reasons: result.reasons,
 			});
 		}
 
@@ -195,7 +195,7 @@ export const runSourcePipeline = z
 				await createScanForDomainId(domainRecord.id);
 				enqueuedDomains.push(q.domain);
 			} catch (error) {
-				const message = error instanceof Error ? error.message : "Unknown enqueue error";
+				const message = error instanceof Error ? error.message : 'Unknown enqueue error';
 				enqueueErrors.push({ domain: q.domain, error: message });
 			}
 		}
@@ -209,7 +209,7 @@ export const runSourcePipeline = z
 			newDomains: newDomains.length,
 			qualificationResults,
 			enqueued: enqueuedDomains.length,
-			enqueueErrors
+			enqueueErrors,
 		});
 	});
 
@@ -233,8 +233,8 @@ export const debugSource = z
 				metadata: {
 					timing: { fetchMs: 0, normalizeMs: 0, totalMs: 0 },
 					skips: [],
-					sampleRaw: []
-				}
+					sampleRaw: [],
+				},
 			});
 		}
 
@@ -243,7 +243,7 @@ export const debugSource = z
 		if (!parsedInput.success) {
 			return sourceDebugResultSchema.parse({
 				sourceKey,
-				fetchError: `Invalid input: ${parsedInput.error.issues[0]?.message ?? "unknown"}`,
+				fetchError: `Invalid input: ${parsedInput.error.issues[0]?.message ?? 'unknown'}`,
 				fetchedEntries: 0,
 				rawDomains: 0,
 				normalizedDomains: 0,
@@ -253,8 +253,8 @@ export const debugSource = z
 				metadata: {
 					timing: { fetchMs: 0, normalizeMs: 0, totalMs: 0 },
 					skips: [],
-					sampleRaw: []
-				}
+					sampleRaw: [],
+				},
 			});
 		}
 
@@ -281,18 +281,18 @@ export const debugSource = z
 					timing: {
 						fetchMs: fetchEnd - fetchStart,
 						normalizeMs: 0,
-						totalMs: Date.now() - totalStart
+						totalMs: Date.now() - totalStart,
 					},
 					skips: [],
-					sampleRaw: []
-				}
+					sampleRaw: [],
+				},
 			});
 		}
 
 		const rawDomains = fetchResult.domains;
 		const normalizeStart = Date.now();
 
-		const transformations: typeof debugTransformationSchema._type[] = [];
+		const transformations: (typeof debugTransformationSchema._type)[] = [];
 		const domainSet = new Set<string>();
 		const skips: { domain: string; reason: string }[] = [];
 
@@ -300,27 +300,27 @@ export const debugSource = z
 			const normalized = source.normalizeDomain(raw);
 
 			if (normalized === null) {
-				skips.push({ domain: raw, reason: "Invalid domain" });
+				skips.push({ domain: raw, reason: 'Invalid domain' });
 				transformations.push({
 					input: raw,
 					output: null,
-					status: "failed",
-					reason: "Invalid domain"
+					status: 'failed',
+					reason: 'Invalid domain',
 				});
 			} else {
 				if (domainSet.has(normalized)) {
 					transformations.push({
 						input: raw,
 						output: normalized,
-						status: "ok",
-						reason: "Duplicate (deduplicated)"
+						status: 'ok',
+						reason: 'Duplicate (deduplicated)',
 					});
 				} else {
 					domainSet.add(normalized);
 					transformations.push({
 						input: raw,
 						output: normalized,
-						status: "ok"
+						status: 'ok',
 					});
 				}
 			}
@@ -343,11 +343,11 @@ export const debugSource = z
 				timing: {
 					fetchMs: fetchEnd - fetchStart,
 					normalizeMs: normalizeEnd - normalizeStart,
-					totalMs: Date.now() - totalStart
+					totalMs: Date.now() - totalStart,
 				},
 				skips,
-				sampleRaw
-			}
+				sampleRaw,
+			},
 		});
 	});
 
@@ -355,11 +355,11 @@ export type {
 	DomainSourceDefinition,
 	QualificationResult,
 	SourcePipelineResult,
-	SourcePreviewResult
+	SourcePreviewResult,
 };
 export {
 	qualificationResultSchema,
 	sourcePipelineResultSchema,
 	sourcePreviewResultSchema,
-	sourceDebugResultSchema
+	sourceDebugResultSchema,
 };

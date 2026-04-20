@@ -20,7 +20,9 @@
 		"e2e:prepare": "node scripts/prepare-e2e-db.mjs",
 		"resetRateLimit": "node scripts/resetRateLimit.mjs",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate"
+		"db:migrate": "drizzle-kit migrate",
+		"format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,json,yaml,yml,md,css,html,scss}\"",
+		"format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,json,yaml,yml,md,css,html,scss}\""
 	},
 	"dependencies": {
 		"@bull-board/api": "^6.21.0",
@@ -47,6 +49,7 @@
 		"drizzle-kit": "^0.31.10",
 		"eslint": "^10.2.0",
 		"npm-run-all": "^4.1.5",
+		"prettier": "^3.8.3",
 		"tailwindcss": "^4.2.2",
 		"tsx": "^4.19.3",
 		"typescript": "^5.8.2",

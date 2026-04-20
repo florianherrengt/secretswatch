@@ -1,5 +1,5 @@
 /* eslint-disable custom/no-raw-functions */
-import type { APIRequestContext } from "@playwright/test";
+import type { APIRequestContext } from '@playwright/test';
 
 export interface MockEmail {
 	to: string;
@@ -37,13 +37,10 @@ export const getSessionIdFromSetCookie = (setCookieHeader: string | null): strin
 	return sessionMatch?.[1] ?? null;
 };
 
-export const requestMagicLink = async (
-	request: APIRequestContext,
-	email: string
-) => {
-	return await request.post("/auth/request-link", {
-		headers: { "Content-Type": "application/json" },
-		data: { email }
+export const requestMagicLink = async (request: APIRequestContext, email: string) => {
+	return await request.post('/auth/request-link', {
+		headers: { 'Content-Type': 'application/json' },
+		data: { email },
 	});
 };
 
@@ -51,10 +48,10 @@ export const getLatestEmailForRecipient = async (
 	request: APIRequestContext,
 	email: string,
 	maxAttempts = 20,
-	waitMs = 100
+	waitMs = 100,
 ): Promise<MockEmail | null> => {
 	for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-		const response = await request.get("/debug/emails");
+		const response = await request.get('/debug/emails');
 
 		if (response.ok()) {
 			const emails = (await response.json()) as MockEmail[];
@@ -75,7 +72,7 @@ export const getLatestEmailForRecipient = async (
 
 export const getTokenForEmail = async (
 	request: APIRequestContext,
-	email: string
+	email: string,
 ): Promise<string | null> => {
 	const latestEmail = await getLatestEmailForRecipient(request, email);
 
@@ -94,9 +91,9 @@ export const getTokenForEmail = async (
 
 export const verifyMagicLinkToken = async (
 	request: APIRequestContext,
-	tokenOrMagicLink: string
+	tokenOrMagicLink: string,
 ) => {
-	const url = tokenOrMagicLink.startsWith("http")
+	const url = tokenOrMagicLink.startsWith('http')
 		? tokenOrMagicLink
 		: `/auth/verify?token=${tokenOrMagicLink}`;
 
@@ -105,7 +102,7 @@ export const verifyMagicLinkToken = async (
 
 export const createAuthenticatedSession = async (
 	request: APIRequestContext,
-	email = `e2e-${Date.now()}-${crypto.randomUUID()}@example.com`
+	email = `e2e-${Date.now()}-${crypto.randomUUID()}@example.com`,
 ): Promise<AuthSession> => {
 	const requestLinkResponse = await requestMagicLink(request, email);
 
@@ -122,7 +119,7 @@ export const createAuthenticatedSession = async (
 	const magicLink = getMagicLinkFromEmail(latestEmail);
 
 	if (!magicLink) {
-		throw new Error("Unable to extract magic link from mock email");
+		throw new Error('Unable to extract magic link from mock email');
 	}
 
 	const verifyResponse = await verifyMagicLinkToken(request, magicLink);
@@ -131,15 +128,15 @@ export const createAuthenticatedSession = async (
 		throw new Error(`Magic link verification failed (${verifyResponse.status()})`);
 	}
 
-	const sessionId = getSessionIdFromSetCookie(verifyResponse.headers()["set-cookie"] ?? null);
+	const sessionId = getSessionIdFromSetCookie(verifyResponse.headers()['set-cookie'] ?? null);
 
 	if (!sessionId) {
-		throw new Error("Missing session_id cookie after magic link verification");
+		throw new Error('Missing session_id cookie after magic link verification');
 	}
 
 	return {
 		email,
 		sessionId,
-		cookieHeader: `session_id=${sessionId}`
+		cookieHeader: `session_id=${sessionId}`,
 	};
 };

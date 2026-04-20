@@ -1,29 +1,25 @@
-import { boolean, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
-export const scanStatusEnum = pgEnum("scan_status", [
-	"pending",
-	"success",
-	"failed"
-]);
+export const scanStatusEnum = pgEnum('scan_status', ['pending', 'success', 'failed']);
 
-export const findingTypeEnum = pgEnum("finding_type", ["secret"]);
+export const findingTypeEnum = pgEnum('finding_type', ['secret']);
 
-export const domains = pgTable("domains", {
-	id: uuid("id").primaryKey(),
-	hostname: text("hostname").notNull().unique(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull()
+export const domains = pgTable('domains', {
+	id: uuid('id').primaryKey(),
+	hostname: text('hostname').notNull().unique(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
-export const scans = pgTable("scans", {
-	id: uuid("id").primaryKey(),
-	domainId: uuid("domain_id")
+export const scans = pgTable('scans', {
+	id: uuid('id').primaryKey(),
+	domainId: uuid('domain_id')
 		.notNull()
 		// eslint-disable-next-line custom/no-raw-functions
-		.references(() => domains.id, { onDelete: "cascade" }),
-	status: scanStatusEnum("status").notNull(),
-	startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }).notNull(),
-	finishedAt: timestamp("finished_at", { withTimezone: true, mode: "date" }),
-	discoveryMetadata: jsonb("discovery_metadata").$type<{
+		.references(() => domains.id, { onDelete: 'cascade' }),
+	status: scanStatusEnum('status').notNull(),
+	startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).notNull(),
+	finishedAt: timestamp('finished_at', { withTimezone: true, mode: 'date' }),
+	discoveryMetadata: jsonb('discovery_metadata').$type<{
 		discoveredSubdomains: string[];
 		stats: {
 			fromLinks: number;
@@ -36,79 +32,79 @@ export const scans = pgTable("scans", {
 			subdomain: string;
 			scannedAssetPaths: string[];
 		}[];
-	}>()
+	}>(),
 });
 
 export const findings = pgTable(
-	"findings",
+	'findings',
 	{
-		id: uuid("id").primaryKey(),
-		scanId: uuid("scan_id")
+		id: uuid('id').primaryKey(),
+		scanId: uuid('scan_id')
 			.notNull()
 			// eslint-disable-next-line custom/no-raw-functions
-			.references(() => scans.id, { onDelete: "cascade" }),
-		checkId: text("check_id").notNull(),
-		type: findingTypeEnum("type").notNull(),
-		file: text("file").notNull(),
-		snippet: text("snippet").notNull(),
-		fingerprint: text("fingerprint").notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull()
+			.references(() => scans.id, { onDelete: 'cascade' }),
+		checkId: text('check_id').notNull(),
+		type: findingTypeEnum('type').notNull(),
+		file: text('file').notNull(),
+		snippet: text('snippet').notNull(),
+		fingerprint: text('fingerprint').notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
 	},
 	// eslint-disable-next-line custom/no-raw-functions
 	(table) => {
 		return {
-			findingsFingerprintIdx: index("findings_fingerprint_idx").on(table.fingerprint),
-			findingsCheckFingerprintIdx: index("findings_check_id_fingerprint_idx").on(
+			findingsFingerprintIdx: index('findings_fingerprint_idx').on(table.fingerprint),
+			findingsCheckFingerprintIdx: index('findings_check_id_fingerprint_idx').on(
 				table.checkId,
-				table.fingerprint
-			)
+				table.fingerprint,
+			),
 		};
-	}
+	},
 );
 
-export const mockEmails = pgTable("mock_emails", {
-	id: uuid("id").primaryKey(),
-	to: text("to").notNull(),
-	subject: text("subject").notNull(),
-	html: text("html").notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull()
+export const mockEmails = pgTable('mock_emails', {
+	id: uuid('id').primaryKey(),
+	to: text('to').notNull(),
+	subject: text('subject').notNull(),
+	html: text('html').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
-export const users = pgTable("users", {
-	id: uuid("id").primaryKey(),
-	email: text("email").notNull().unique(),
-	isVerified: boolean("is_verified").notNull().default(false),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull()
+export const users = pgTable('users', {
+	id: uuid('id').primaryKey(),
+	email: text('email').notNull().unique(),
+	isVerified: boolean('is_verified').notNull().default(false),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
-export const loginTokens = pgTable("login_tokens", {
-	id: uuid("id").primaryKey(),
-	email: text("email")
+export const loginTokens = pgTable('login_tokens', {
+	id: uuid('id').primaryKey(),
+	email: text('email')
 		.notNull()
 		// eslint-disable-next-line custom/no-raw-functions
-		.references(() => users.email, { onDelete: "cascade" }),
-	tokenHash: text("token_hash").notNull(),
-	expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
-	usedAt: timestamp("used_at", { withTimezone: true, mode: "date" }),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull()
+		.references(() => users.email, { onDelete: 'cascade' }),
+	tokenHash: text('token_hash').notNull(),
+	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+	usedAt: timestamp('used_at', { withTimezone: true, mode: 'date' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
-export const userDomains = pgTable("user_domains", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	userId: uuid("user_id")
+export const userDomains = pgTable('user_domains', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	userId: uuid('user_id')
 		.notNull()
 		// eslint-disable-next-line custom/no-raw-functions
-		.references(() => users.id, { onDelete: "cascade" }),
-	domain: text("domain").notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+	domain: text('domain').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
 });
 
-export const sessions = pgTable("sessions", {
-	id: uuid("id").primaryKey(),
-	userId: uuid("user_id")
+export const sessions = pgTable('sessions', {
+	id: uuid('id').primaryKey(),
+	userId: uuid('user_id')
 		.notNull()
 		// eslint-disable-next-line custom/no-raw-functions
-		.references(() => users.id, { onDelete: "cascade" }),
-	expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
 });

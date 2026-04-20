@@ -1,8 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const sourceFetchResultSchema = z.discriminatedUnion("ok", [
+export const sourceFetchResultSchema = z.discriminatedUnion('ok', [
 	z.object({ ok: z.literal(true), fetchedEntries: z.number().int(), domains: z.array(z.string()) }),
-	z.object({ ok: z.literal(false), error: z.string() })
+	z.object({ ok: z.literal(false), error: z.string() }),
 ]);
 
 export type SourceFetchResult = z.infer<typeof sourceFetchResultSchema>;
@@ -10,7 +10,7 @@ export type SourceFetchResult = z.infer<typeof sourceFetchResultSchema>;
 export const qualificationResultSchema = z.object({
 	domain: z.string(),
 	isQualified: z.boolean(),
-	reasons: z.array(z.string())
+	reasons: z.array(z.string()),
 });
 
 export type QualificationResult = z.infer<typeof qualificationResultSchema>;
@@ -25,7 +25,7 @@ export const sourcePipelineResultSchema = z.object({
 	newDomains: z.number().int(),
 	qualificationResults: z.array(qualificationResultSchema),
 	enqueued: z.number().int(),
-	enqueueErrors: z.array(z.object({ domain: z.string(), error: z.string() }))
+	enqueueErrors: z.array(z.object({ domain: z.string(), error: z.string() })),
 });
 
 export type SourcePipelineResult = z.infer<typeof sourcePipelineResultSchema>;
@@ -34,7 +34,7 @@ export const sourcePreviewResultSchema = z.object({
 	sourceKey: z.string(),
 	fetchError: z.string().optional(),
 	fetchedEntries: z.number().int(),
-	domains: z.array(z.string())
+	domains: z.array(z.string()),
 });
 
 export type SourcePreviewResult = z.infer<typeof sourcePreviewResultSchema>;
@@ -42,8 +42,8 @@ export type SourcePreviewResult = z.infer<typeof sourcePreviewResultSchema>;
 export const debugTransformationSchema = z.object({
 	input: z.string(),
 	output: z.string().nullable(),
-	status: z.enum(["ok", "failed", "filtered"]),
-	reason: z.string().optional()
+	status: z.enum(['ok', 'failed', 'filtered']),
+	reason: z.string().optional(),
 });
 
 export type DebugTransformation = z.infer<typeof debugTransformationSchema>;
@@ -61,14 +61,16 @@ export const sourceDebugResultSchema = z.object({
 		timing: z.object({
 			fetchMs: z.number(),
 			normalizeMs: z.number(),
-			totalMs: z.number()
+			totalMs: z.number(),
 		}),
-		skips: z.array(z.object({
-			domain: z.string(),
-			reason: z.string()
-		})),
-		sampleRaw: z.array(z.any()).optional()
-	})
+		skips: z.array(
+			z.object({
+				domain: z.string(),
+				reason: z.string(),
+			}),
+		),
+		sampleRaw: z.array(z.any()).optional(),
+	}),
 });
 
 export type SourceDebugResult = z.infer<typeof sourceDebugResultSchema>;

@@ -40,13 +40,13 @@ Every route follows: Define Zod schema → Parse request → Execute logic → R
 
 ```ts
 const QuerySchema = z.object({
-  page: z.coerce.number().default(1),
+	page: z.coerce.number().default(1),
 });
 
-app.get("/domains", async (c) => {
-  const query = QuerySchema.parse(c.req.query());
-  const domains = await listDomains(query);
-  return c.html(render(DomainsPage, { domains }));
+app.get('/domains', async (c) => {
+	const query = QuerySchema.parse(c.req.query());
+	const domains = await listDomains(query);
+	return c.html(render(DomainsPage, { domains }));
 });
 ```
 
@@ -73,13 +73,13 @@ Views are pure, typed functions.
 
 ```tsx
 export function DomainsPage({ domains }: { domains: Domain[] }) {
-  return (
-    <Layout title="Domains">
-      {domains.map((d) => (
-        <DomainCard domain={d} />
-      ))}
-    </Layout>
-  );
+	return (
+		<Layout title="Domains">
+			{domains.map((d) => (
+				<DomainCard domain={d} />
+			))}
+		</Layout>
+	);
 }
 ```
 

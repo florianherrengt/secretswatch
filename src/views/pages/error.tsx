@@ -1,10 +1,10 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
-import { Layout } from "../layout.js";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
+import { Layout } from '../layout.js';
 
 export const errorPagePropsSchema = z.object({
-	title: z.string().min(1).default("Error"),
-	message: z.string().min(1)
+	title: z.string().min(1).default('Error'),
+	message: z.string().min(1),
 });
 
 export type ErrorPageProps = z.infer<typeof errorPagePropsSchema>;

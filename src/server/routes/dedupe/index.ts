@@ -1,33 +1,33 @@
-import { randomUUID } from "node:crypto";
-import { z } from "zod";
-import { eq, inArray } from "drizzle-orm";
-import { Hono } from "hono";
-import type { Context } from "hono";
-import { render } from "../../../lib/response.js";
-import { scanDomain } from "../../../pipeline/scanDomain.js";
+import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
+import { eq, inArray } from 'drizzle-orm';
+import { Hono } from 'hono';
+import type { Context } from 'hono';
+import { render } from '../../../lib/response.js';
+import { scanDomain } from '../../../pipeline/scanDomain.js';
 import {
 	DedupeInputPage,
 	DedupeResultPage,
 	dedupeInputPagePropsSchema,
-	dedupeResultPagePropsSchema
-} from "../../../views/pages/dedupe.js";
-import { findings, scans } from "../../db/schema.js";
-import { db } from "../../db/client.js";
+	dedupeResultPagePropsSchema,
+} from '../../../views/pages/dedupe.js';
+import { findings, scans } from '../../db/schema.js';
+import { db } from '../../db/client.js';
 import {
 	normalizeSubmittedDomain,
 	dedupeFindingsWithinScan,
 	upsertDomainRecord,
-	createPendingScanRecord
-} from "../../scan/scanJob.js";
+	createPendingScanRecord,
+} from '../../scan/scanJob.js';
 
 const dedupeRoutes = new Hono();
 
 const dedupeFormSchema = z.object({
-	domain: z.string().min(1)
+	domain: z.string().min(1),
 });
 
 dedupeRoutes.get(
-	"/",
+	'/',
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -35,11 +35,11 @@ dedupeRoutes.get(
 		.implement((c) => {
 			const viewProps = dedupeInputPagePropsSchema.parse({});
 			return c.html(render(DedupeInputPage, viewProps));
-		})
+		}),
 );
 
 dedupeRoutes.post(
-	"/",
+	'/',
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -47,13 +47,13 @@ dedupeRoutes.post(
 		.implement(async (c) => {
 			const body = await c.req.parseBody();
 			const parsedForm = dedupeFormSchema.safeParse({
-				domain: typeof body.domain === "string" ? body.domain : ""
+				domain: typeof body.domain === 'string' ? body.domain : '',
 			});
 
 			if (!parsedForm.success) {
 				const viewProps = dedupeInputPagePropsSchema.parse({
-					errorMessage: "Invalid domain input.",
-					defaultDomain: typeof body.domain === "string" ? body.domain : ""
+					errorMessage: 'Invalid domain input.',
+					defaultDomain: typeof body.domain === 'string' ? body.domain : '',
 				});
 
 				return c.html(render(DedupeInputPage, viewProps), 400);
@@ -75,10 +75,10 @@ dedupeRoutes.post(
 							.where(inArray(findings.fingerprint, dedupedFingerprints))
 					: [];
 			const existingFindingKeys = new Set(
-				existingFingerprintRows.map((row) => `${row.checkId}:${row.fingerprint}`)
+				existingFingerprintRows.map((row) => `${row.checkId}:${row.fingerprint}`),
 			);
 			const newFindings = dedupedFindings.filter(
-				(finding) => !existingFindingKeys.has(`${finding.checkId}:${finding.fingerprint}`)
+				(finding) => !existingFindingKeys.has(`${finding.checkId}:${finding.fingerprint}`),
 			);
 
 			await db
@@ -89,8 +89,8 @@ dedupeRoutes.post(
 					discoveryMetadata: {
 						discoveredSubdomains: pipelineResult.discoveredSubdomains,
 						stats: pipelineResult.discoveryStats,
-						subdomainAssetCoverage: pipelineResult.subdomainAssetCoverage
-					}
+						subdomainAssetCoverage: pipelineResult.subdomainAssetCoverage,
+					},
 				})
 				.where(eq(scans.id, scanRecord.id));
 
@@ -98,16 +98,16 @@ dedupeRoutes.post(
 				await db.insert(findings).values(
 					newFindings.map((finding) => {
 						return {
-						id: randomUUID(),
-						scanId: scanRecord.id,
-						checkId: finding.checkId,
-						type: finding.type,
-						file: finding.file,
+							id: randomUUID(),
+							scanId: scanRecord.id,
+							checkId: finding.checkId,
+							type: finding.type,
+							file: finding.file,
 							snippet: finding.snippet,
 							fingerprint: finding.fingerprint,
-							createdAt: finishedAt
+							createdAt: finishedAt,
 						};
-					})
+					}),
 				);
 			}
 
@@ -116,11 +116,11 @@ dedupeRoutes.post(
 				rawFindingsCount: pipelineResult.findings.length,
 				afterInternalDedupeCount: dedupedFindings.length,
 				newFindingsInsertedCount: newFindings.length,
-				skippedExistingCount: dedupedFindings.length - newFindings.length
+				skippedExistingCount: dedupedFindings.length - newFindings.length,
 			});
 
 			return c.html(render(DedupeResultPage, viewProps));
-		})
+		}),
 );
 
 export default dedupeRoutes;

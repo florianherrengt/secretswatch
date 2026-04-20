@@ -1,22 +1,22 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const checkFindingSchema = z.object({
-	type: z.literal("secret"),
+	type: z.literal('secret'),
 	file: z.string().url(),
 	snippet: z.string(),
-	fingerprint: z.string()
+	fingerprint: z.string(),
 });
 
 export const checkScriptSchema = z.object({
 	file: z.string().url(),
-	content: z.string()
+	content: z.string(),
 });
 
 export const sourceMapDiscoveryMethodSchema = z.enum([
-	"sourcemap-header",
-	"x-sourcemap-header",
-	"inline-comment",
-	"legacy-inline-comment"
+	'sourcemap-header',
+	'x-sourcemap-header',
+	'inline-comment',
+	'legacy-inline-comment',
 ]);
 
 export const sourceMapProbeSchema = z.object({
@@ -25,28 +25,28 @@ export const sourceMapProbeSchema = z.object({
 	discoveryMethod: sourceMapDiscoveryMethodSchema,
 	isAccessible: z.boolean(),
 	httpStatus: z.number().int().nullable(),
-	hasSourcesContent: z.boolean().nullable()
+	hasSourcesContent: z.boolean().nullable(),
 });
 
 export const checkRunInputSchema = z.object({
 	domain: z.string().url(),
 	scripts: z.array(checkScriptSchema),
 	sourceMaps: z.array(sourceMapProbeSchema).optional().default([]),
-	sitemapFound: z.boolean().optional().default(true)
+	sitemapFound: z.boolean().optional().default(true),
 });
 
 export const checkRunOutputSchema = z.object({
-	findings: z.array(checkFindingSchema)
+	findings: z.array(checkFindingSchema),
 });
 
 export const checkDefinitionSchema = z.object({
 	id: z.string().min(1),
 	name: z.string().min(1),
-	description: z.string().min(1)
+	description: z.string().min(1),
 });
 
 export const checkResultSchema = checkDefinitionSchema.extend({
-	findings: z.array(checkFindingSchema)
+	findings: z.array(checkFindingSchema),
 });
 
 export type CheckFinding = z.infer<typeof checkFindingSchema>;

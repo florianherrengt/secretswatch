@@ -1,14 +1,14 @@
-import { randomUUID } from "node:crypto";
-import { z } from "zod";
-import { and, asc, eq, isNull } from "drizzle-orm";
-import { ScanDomainOutput } from "../../pipeline/scanDomain.js";
-import { domainSchema } from "../../schemas/domain.js";
-import { scanSchema, scanStatusSchema } from "../../schemas/scan.js";
-import { db } from "../db/client.js";
-import { domains, findings, scans } from "../db/schema.js";
+import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
+import { and, asc, eq, isNull } from 'drizzle-orm';
+import { ScanDomainOutput } from '../../pipeline/scanDomain.js';
+import { domainSchema } from '../../schemas/domain.js';
+import { scanSchema, scanStatusSchema } from '../../schemas/scan.js';
+import { db } from '../db/client.js';
+import { domains, findings, scans } from '../db/schema.js';
 
 export const scanQueueJobDataSchema = z.object({
-	domainId: z.string().uuid()
+	domainId: z.string().uuid(),
 });
 
 export type ScanQueueJobData = z.infer<typeof scanQueueJobDataSchema>;
@@ -20,7 +20,7 @@ export const normalizeSubmittedDomain = z
 	.implement((rawDomain) => {
 		const trimmed = rawDomain.trim();
 
-		if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+		if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
 			const parsedUrl = (() => {
 				try {
 					return new URL(trimmed);
@@ -30,10 +30,10 @@ export const normalizeSubmittedDomain = z
 			})();
 
 			if (!parsedUrl) {
-				return trimmed.replace(/^https?:\/\//i, "");
+				return trimmed.replace(/^https?:\/\//i, '');
 			}
 
-			const normalizedPath = parsedUrl.pathname === "/" ? "" : parsedUrl.pathname;
+			const normalizedPath = parsedUrl.pathname === '/' ? '' : parsedUrl.pathname;
 			return `${parsedUrl.host}${normalizedPath}${parsedUrl.search}`;
 		}
 
@@ -42,10 +42,10 @@ export const normalizeSubmittedDomain = z
 
 const scanFindingSchema = z.object({
 	checkId: z.string().min(1),
-	type: z.literal("secret"),
+	type: z.literal('secret'),
 	file: z.string(),
 	snippet: z.string(),
-	fingerprint: z.string()
+	fingerprint: z.string(),
 });
 
 export const dedupeFindingsWithinScan = z
@@ -80,7 +80,7 @@ export const upsertDomainRecord = z
 			.values({
 				id: randomUUID(),
 				hostname,
-				createdAt: new Date()
+				createdAt: new Date(),
 			})
 			.onConflictDoNothing({ target: domains.hostname })
 			.returning();
@@ -112,12 +112,12 @@ export const createPendingScanRecord = z
 					.values({
 						id: randomUUID(),
 						domainId,
-						status: "pending",
+						status: 'pending',
 						startedAt: now,
-						finishedAt: null
+						finishedAt: null,
 					})
 					.returning()
-			)[0]
+			)[0],
 		);
 	});
 
@@ -143,7 +143,9 @@ export const findOldestPendingScanRecord = z
 		const pendingScanRows = await db
 			.select()
 			.from(scans)
-			.where(and(eq(scans.domainId, domainId), eq(scans.status, "pending"), isNull(scans.finishedAt)))
+			.where(
+				and(eq(scans.domainId, domainId), eq(scans.status, 'pending'), isNull(scans.finishedAt)),
+			)
 			.orderBy(asc(scans.startedAt))
 			.limit(1);
 
@@ -159,8 +161,8 @@ export const resolveScanRecordForJob = z
 	.args(
 		z.object({
 			domainId: z.string().uuid(),
-			scanId: z.string().uuid().nullable()
-		})
+			scanId: z.string().uuid().nullable(),
+		}),
 	)
 	.returns(z.promise(scanSchema))
 	.implement(async ({ domainId, scanId }) => {
@@ -192,14 +194,14 @@ export const scanPersistenceResultSchema = z.object({
 		fromSitemap: z.number().int().nonnegative(),
 		totalConsidered: z.number().int().nonnegative(),
 		totalAccepted: z.number().int().nonnegative(),
-		truncated: z.boolean()
+		truncated: z.boolean(),
 	}),
 	subdomainAssetCoverage: z.array(
 		z.object({
 			subdomain: z.string(),
-			scannedAssetPaths: z.array(z.string())
-		})
-	)
+			scannedAssetPaths: z.array(z.string()),
+		}),
+	),
 });
 
 export type ScanPersistenceResult = z.infer<typeof scanPersistenceResultSchema>;
@@ -209,8 +211,8 @@ export const persistScanOutcome = z
 	.args(
 		z.object({
 			scanId: z.string().uuid(),
-			pipelineResult: ScanDomainOutput
-		})
+			pipelineResult: ScanDomainOutput,
+		}),
 	)
 	.returns(z.promise(scanPersistenceResultSchema))
 	.implement(async ({ scanId, pipelineResult }) => {
@@ -235,9 +237,9 @@ export const persistScanOutcome = z
 						file: finding.file,
 						snippet: finding.snippet,
 						fingerprint: finding.fingerprint,
-						createdAt: finishedAt
+						createdAt: finishedAt,
 					};
-				})
+				}),
 			);
 		}
 
@@ -249,8 +251,8 @@ export const persistScanOutcome = z
 				discoveryMetadata: {
 					discoveredSubdomains: pipelineResult.discoveredSubdomains,
 					stats: pipelineResult.discoveryStats,
-					subdomainAssetCoverage: pipelineResult.subdomainAssetCoverage
-				}
+					subdomainAssetCoverage: pipelineResult.subdomainAssetCoverage,
+				},
 			})
 			.where(eq(scans.id, scanId));
 
@@ -261,7 +263,7 @@ export const persistScanOutcome = z
 			insertedFindingsCount: newFindings.length,
 			discoveredSubdomains: pipelineResult.discoveredSubdomains,
 			discoveryStats: pipelineResult.discoveryStats,
-			subdomainAssetCoverage: pipelineResult.subdomainAssetCoverage
+			subdomainAssetCoverage: pipelineResult.subdomainAssetCoverage,
 		});
 	});
 
@@ -273,8 +275,8 @@ export const markScanAsFailed = z
 		await db
 			.update(scans)
 			.set({
-				status: "failed",
-				finishedAt: new Date()
+				status: 'failed',
+				finishedAt: new Date(),
 			})
 			.where(eq(scans.id, scanId));
 	});
@@ -294,7 +296,7 @@ export const getDomainById = z
 	});
 
 export const createScanResultSchema = z.object({
-	scanId: z.string().uuid()
+	scanId: z.string().uuid(),
 });
 
 export const createScanForDomainId = z
@@ -305,18 +307,18 @@ export const createScanForDomainId = z
 		const scanRecord = await createPendingScanRecord(domainId);
 		const jobPayload = scanQueueJobDataSchema.parse({ domainId });
 
-		const { enqueueScanJob } = await import("./scanQueue.js");
+		const { enqueueScanJob } = await import('./scanQueue.js');
 
 		try {
 			await enqueueScanJob(scanRecord.id, jobPayload);
 		} catch (error) {
 			await markScanAsFailed(scanRecord.id);
-			const normalizedError = error instanceof Error ? error : new Error("Unknown enqueue error");
+			const normalizedError = error instanceof Error ? error : new Error('Unknown enqueue error');
 
-			console.error("[create-scan] Failed to enqueue scan job", {
+			console.error('[create-scan] Failed to enqueue scan job', {
 				scanId: scanRecord.id,
 				domainId,
-				error: normalizedError.message
+				error: normalizedError.message,
 			});
 		}
 

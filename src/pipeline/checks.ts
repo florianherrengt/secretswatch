@@ -15,5 +15,5 @@ export {
 	type CheckDefinition,
 	type CheckResult,
 	type ScanCheck,
-	builtinChecks
-} from "./checks/index.js";
+	builtinChecks,
+} from './checks/index.js';

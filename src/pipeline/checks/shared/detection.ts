@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { checkFindingSchema } from "../contracts.js";
-import { buildSnippet } from "./snippet.js";
-import { fingerprintValue } from "./fingerprint.js";
+import { z } from 'zod';
+import { checkFindingSchema } from '../contracts.js';
+import { buildSnippet } from './snippet.js';
+import { fingerprintValue } from './fingerprint.js';
 
 export type ScriptDetection = {
 	value: string;
@@ -15,10 +15,10 @@ const toFinding = z
 	.returns(checkFindingSchema)
 	.implement((file, body, detection) => {
 		return {
-			type: "secret",
+			type: 'secret',
 			file,
 			snippet: buildSnippet(body, detection.start, detection.end, detection.value),
-			fingerprint: fingerprintValue(detection.value)
+			fingerprint: fingerprintValue(detection.value),
 		};
 	});
 

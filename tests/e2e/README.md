@@ -15,16 +15,16 @@ This logs in via the magic-link flow and gives you a ready-to-use session, so ea
 ### Example
 
 ```ts
-import { expect, test } from "./fixtures/authed";
+import { expect, test } from './fixtures/authed';
 
-test("authenticated endpoint", async ({ request, authHeaders }) => {
-	const response = await request.get("/admin/queues", { headers: authHeaders });
+test('authenticated endpoint', async ({ request, authHeaders }) => {
+	const response = await request.get('/admin/queues', { headers: authHeaders });
 	expect(response.status()).toBe(200);
 });
 
-test("authenticated UI page", async ({ authedPage }) => {
-	await authedPage.goto("/");
-	await expect(authedPage.getByRole("button", { name: "Run scan" })).toBeVisible();
+test('authenticated UI page', async ({ authedPage }) => {
+	await authedPage.goto('/');
+	await expect(authedPage.getByRole('button', { name: 'Run scan' })).toBeVisible();
 });
 ```
 
@@ -46,15 +46,15 @@ Use these helpers for auth-focused/security tests so new tests do not reimplemen
 ### Multiple users in one test
 
 ```ts
-import { expect, test } from "@playwright/test";
-import { createAuthenticatedSession } from "./support/auth";
+import { expect, test } from '@playwright/test';
+import { createAuthenticatedSession } from './support/auth';
 
-test("session isolation", async ({ request }) => {
+test('session isolation', async ({ request }) => {
 	const userA = await createAuthenticatedSession(request, `user-a-${Date.now()}@example.com`);
 	await createAuthenticatedSession(request, `user-b-${Date.now()}@example.com`);
 
-	const response = await request.get("/auth/whoami", {
-		headers: { Cookie: userA.cookieHeader }
+	const response = await request.get('/auth/whoami', {
+		headers: { Cookie: userA.cookieHeader },
 	});
 
 	const body = await response.json();

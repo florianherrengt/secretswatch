@@ -1,180 +1,154 @@
-import { type Page } from "@playwright/test";
-import { expect, test } from "./fixtures/authed";
-import { builtinChecks } from "../../src/pipeline/checks.js";
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures/authed';
+import { builtinChecks } from '../../src/pipeline/checks.js';
 
 const waitForScanCompletion = async (page: Page) => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    const issueDetected = await page
-      .getByText("Issue Detected", { exact: true })
-      .count();
-    const noIssuesFound = await page
-      .getByText("No Issues Found", { exact: true })
-      .count();
+	for (let attempt = 0; attempt < 20; attempt += 1) {
+		const issueDetected = await page.getByText('Issue Detected', { exact: true }).count();
+		const noIssuesFound = await page.getByText('No Issues Found', { exact: true }).count();
 
-    if (issueDetected > 0 || noIssuesFound > 0) {
-      return;
-    }
+		if (issueDetected > 0 || noIssuesFound > 0) {
+			return;
+		}
 
-    await page.waitForTimeout(250);
-    await page.reload();
-  }
+		await page.waitForTimeout(250);
+		await page.reload();
+	}
 
-  throw new Error("Timed out waiting for scan completion");
+	throw new Error('Timed out waiting for scan completion');
 };
 
 const waitForScanFromHome = async (page: Page) => {
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    await page.waitForURL(/\/scan(\/[0-9a-f-]{36})?$/, { timeout: 5_000 });
+	for (let attempt = 0; attempt < 6; attempt += 1) {
+		await page.waitForURL(/\/scan(\/[0-9a-f-]{36})?$/, { timeout: 5_000 });
 
-    if (/\/scan\/[0-9a-f-]{36}$/.test(page.url())) {
-      await expect(page).toHaveTitle("Scan Result | Secret Detector");
-      await waitForScanCompletion(page);
-      return;
-    }
+		if (/\/scan\/[0-9a-f-]{36}$/.test(page.url())) {
+			await expect(page).toHaveTitle('Scan Result | Secret Detector');
+			await waitForScanCompletion(page);
+			return;
+		}
 
-    const limited = await page
-      .getByRole("heading", { name: "Too Many Requests" })
-      .count();
+		const limited = await page.getByRole('heading', { name: 'Too Many Requests' }).count();
 
-    if (limited === 0) {
-      throw new Error(
-        `Expected scan result redirect but stayed on ${page.url()}`,
-      );
-    }
+		if (limited === 0) {
+			throw new Error(`Expected scan result redirect but stayed on ${page.url()}`);
+		}
 
-    await page.waitForTimeout(2_000 * (attempt + 1));
-    await page.goto("/");
-  }
+		await page.waitForTimeout(2_000 * (attempt + 1));
+		await page.goto('/');
+	}
 
-  throw new Error("Rate limit prevented scanning demo website");
+	throw new Error('Rate limit prevented scanning demo website');
 };
 
-test.describe("home page", () => {
-  test("loads and shows scan form", async ({ page }) => {
-    await page.goto("/");
+test.describe('home page', () => {
+	test('loads and shows scan form', async ({ page }) => {
+		await page.goto('/');
 
-    await expect(page).toHaveTitle("Secret Detector");
-    await expect(page.getByRole("button", { name: "Scan now" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Get started" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Sign up" })).toHaveCount(0);
-  });
+		await expect(page).toHaveTitle('Secret Detector');
+		await expect(page.getByRole('button', { name: 'Scan now' })).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Get started' })).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
+		await expect(page.getByRole('link', { name: 'Sign up' })).toHaveCount(0);
+	});
 
-  test("shows go to app button when logged in", async ({ authedPage }) => {
-    const page = authedPage;
+	test('shows go to app button when logged in', async ({ authedPage }) => {
+		const page = authedPage;
 
-    await page.goto("/");
+		await page.goto('/');
 
-    await expect(page.getByRole("link", { name: "Go to app" })).toBeVisible();
-  });
+		await expect(page.getByRole('link', { name: 'Go to app' })).toBeVisible();
+	});
 
-  test("manual scan submits domain and reaches scan result", async ({
-    authedPage,
-  }) => {
-    const page = authedPage;
+	test('manual scan submits domain and reaches scan result', async ({ authedPage }) => {
+		const page = authedPage;
 
-    await page.goto("/");
-    await page
-      .getByPlaceholder("Enter any URL to scan")
-      .fill("localhost:3000/sandbox/demo");
-    await page.getByRole("button", { name: "Scan now" }).click();
+		await page.goto('/');
+		await page.getByPlaceholder('Enter any URL to scan').fill('localhost:3000/sandbox/demo');
+		await page.getByRole('button', { name: 'Scan now' }).click();
 
-    await waitForScanFromHome(page);
-    await expect(
-      page.getByText("Issue Detected", { exact: true }),
-    ).toBeVisible();
+		await waitForScanFromHome(page);
+		await expect(page.getByText('Issue Detected', { exact: true })).toBeVisible();
 
-    for (const check of builtinChecks) {
-      await expect(page.getByText(check.name, { exact: true })).toBeVisible();
-    }
-  });
+		for (const check of builtinChecks) {
+			await expect(page.getByText(check.name, { exact: true })).toBeVisible();
+		}
+	});
 
-  test("scan result shows discovered subdomains section with empty state", async ({
-    authedPage,
-  }) => {
-    const page = authedPage;
+	test('scan result shows discovered subdomains section with empty state', async ({
+		authedPage,
+	}) => {
+		const page = authedPage;
 
-    await page.goto("/");
-    await page
-      .getByPlaceholder("Enter any URL to scan")
-      .fill("localhost:3000/sandbox/demo");
-    await page.getByRole("button", { name: "Scan now" }).click();
+		await page.goto('/');
+		await page.getByPlaceholder('Enter any URL to scan').fill('localhost:3000/sandbox/demo');
+		await page.getByRole('button', { name: 'Scan now' }).click();
 
-    await waitForScanFromHome(page);
+		await waitForScanFromHome(page);
 
-    await expect(
-      page.getByText("Discovered Subdomains"),
-    ).toBeVisible();
-    await expect(
-      page.getByText("No subdomains discovered"),
-    ).toBeVisible();
-  });
+		await expect(page.getByText('Discovered Subdomains')).toBeVisible();
+		await expect(page.getByText('No subdomains discovered')).toBeVisible();
+	});
 
-  test("scan result shows discovered subdomains when discovery is enabled", async ({
-    authedPage,
-  }) => {
-    const page = authedPage;
+	test('scan result shows discovered subdomains when discovery is enabled', async ({
+		authedPage,
+	}) => {
+		const page = authedPage;
 
-    await page.goto("/");
-    await page
-      .getByPlaceholder("Enter any URL to scan")
-      .fill("app.localhost:3000/sandbox/demo");
-    await page.getByRole("button", { name: "Scan now" }).click();
+		await page.goto('/');
+		await page.getByPlaceholder('Enter any URL to scan').fill('app.localhost:3000/sandbox/demo');
+		await page.getByRole('button', { name: 'Scan now' }).click();
 
-    await waitForScanFromHome(page);
+		await waitForScanFromHome(page);
 
-    await expect(page.getByText("Discovered Subdomains")).toBeVisible();
-    await expect(page.getByText("api.app.localhost")).toBeVisible();
-    await expect(page.getByText("cdn.app.localhost")).toBeVisible();
-  });
+		await expect(page.getByText('Discovered Subdomains')).toBeVisible();
+		await expect(page.getByText('api.app.localhost')).toBeVisible();
+		await expect(page.getByText('cdn.app.localhost')).toBeVisible();
+	});
 
-  test("displays flash message when flash cookie is present", async ({ page }) => {
-    const targetDomain = process.env.DOMAIN ?? "127.0.0.1:3000";
-    const baseUrl = targetDomain.includes("://")
-      ? targetDomain
-      : `http://${targetDomain}`;
-    const parsedBaseUrl = new URL(baseUrl);
+	test('displays flash message when flash cookie is present', async ({ page }) => {
+		const targetDomain = process.env.DOMAIN ?? '127.0.0.1:3000';
+		const baseUrl = targetDomain.includes('://') ? targetDomain : `http://${targetDomain}`;
+		const parsedBaseUrl = new URL(baseUrl);
 
-    await page.context().addCookies([
-      {
-        name: "flash_message",
-        value: "Your account has been deleted.",
-        domain: parsedBaseUrl.hostname,
-        path: "/",
-        httpOnly: true,
-        sameSite: "Lax",
-        secure: parsedBaseUrl.protocol === "https:"
-      }
-    ]);
+		await page.context().addCookies([
+			{
+				name: 'flash_message',
+				value: 'Your account has been deleted.',
+				domain: parsedBaseUrl.hostname,
+				path: '/',
+				httpOnly: true,
+				sameSite: 'Lax',
+				secure: parsedBaseUrl.protocol === 'https:',
+			},
+		]);
 
-    await page.goto("/");
-    await expect(page.getByText("Your account has been deleted.")).toBeVisible();
+		await page.goto('/');
+		await expect(page.getByText('Your account has been deleted.')).toBeVisible();
 
-    await page.reload();
-    await expect(page.getByText("Your account has been deleted.")).not.toBeVisible();
-  });
+		await page.reload();
+		await expect(page.getByText('Your account has been deleted.')).not.toBeVisible();
+	});
 
-  test("handles malformed flash cookie without crashing", async ({ page }) => {
-    const targetDomain = process.env.DOMAIN ?? "127.0.0.1:3000";
-    const baseUrl = targetDomain.includes("://")
-      ? targetDomain
-      : `http://${targetDomain}`;
-    const parsedBaseUrl = new URL(baseUrl);
+	test('handles malformed flash cookie without crashing', async ({ page }) => {
+		const targetDomain = process.env.DOMAIN ?? '127.0.0.1:3000';
+		const baseUrl = targetDomain.includes('://') ? targetDomain : `http://${targetDomain}`;
+		const parsedBaseUrl = new URL(baseUrl);
 
-    await page.context().addCookies([
-      {
-        name: "flash_message",
-        value: "%E0%A4%A",
-        domain: parsedBaseUrl.hostname,
-        path: "/",
-        httpOnly: true,
-        sameSite: "Lax",
-        secure: parsedBaseUrl.protocol === "https:"
-      }
-    ]);
+		await page.context().addCookies([
+			{
+				name: 'flash_message',
+				value: '%E0%A4%A',
+				domain: parsedBaseUrl.hostname,
+				path: '/',
+				httpOnly: true,
+				sameSite: 'Lax',
+				secure: parsedBaseUrl.protocol === 'https:',
+			},
+		]);
 
-    await page.goto("/");
-    await expect(page).toHaveTitle("Secret Detector");
-    await expect(page.getByText("Your account has been deleted.")).toHaveCount(0);
-  });
+		await page.goto('/');
+		await expect(page).toHaveTitle('Secret Detector');
+		await expect(page.getByText('Your account has been deleted.')).toHaveCount(0);
+	});
 });

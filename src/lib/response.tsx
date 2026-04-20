@@ -1,10 +1,6 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-type Renderable =
-	| string
-	| Promise<string>
-	| { toString: () => string | Promise<string> }
-	| null;
+type Renderable = string | Promise<string> | { toString: () => string | Promise<string> } | null;
 
 export const render = z
 	.function()
@@ -15,10 +11,10 @@ export const render = z
 		const element = component(props);
 
 		if (element === null) {
-			return "";
+			return '';
 		}
 
-		if (typeof element === "string") {
+		if (typeof element === 'string') {
 			return element;
 		}
 

@@ -15,6 +15,7 @@ DEBUG_ENDPOINT=true npm run start
 ```
 
 Or in `.env`:
+
 ```
 DEBUG_ENDPOINT=true
 ```
@@ -28,16 +29,19 @@ DEBUG_ENDPOINT=true
 Runs a source fetch and displays detailed transformation traces.
 
 Query params:
+
 - `tld` (crtsh only): Filter by TLD suffix (e.g., `?tld=io`)
 - `maxPages` (producthunt only): Limit pages fetched (1-20, default 10)
 
 Examples:
+
 ```
 /debug/sources/crtsh?tld=io
 /debug/sources/producthunt?maxPages=5
 ```
 
 Response includes:
+
 - `fetchError`: Error message if fetch failed
 - `fetchedEntries`: Number of entries fetched
 - `rawDomains`: Total raw domains before normalization
@@ -61,12 +65,13 @@ Clears all mock emails from the database. Returns `{ success: true }`.
 
 ## Environment
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable         | Default | Description            |
+| ---------------- | ------- | ---------------------- |
 | `DEBUG_ENDPOINT` | `false` | Enable debug endpoints |
 
 ## Test Environment
 
 Debug endpoints are enabled in:
+
 - E2E tests (`playwright.config.ts`)
 - CI workflow (`.github/workflows/ci.yml`)

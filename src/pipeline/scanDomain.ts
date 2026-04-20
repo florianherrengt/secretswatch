@@ -1,5 +1,5 @@
-import { isIP } from "node:net";
-import { z } from "zod";
+import { isIP } from 'node:net';
+import { z } from 'zod';
 import {
 	builtinChecks,
 	checkResultSchema,
@@ -8,8 +8,8 @@ import {
 	sourceMapDiscoveryMethodSchema,
 	type ScanCheck,
 	type SourceMapProbe,
-	type SourceMapDiscoveryMethod
-} from "./checks.js";
+	type SourceMapDiscoveryMethod,
+} from './checks.js';
 import {
 	discoverSubdomainTargets,
 	shouldSkipDiscovery,
@@ -17,23 +17,23 @@ import {
 	isSubdomainOf,
 	discoveryStatsSchema,
 	getEmptyDiscoveryOutput,
-	type DiscoveryOutput
-} from "./discovery.js";
+	type DiscoveryOutput,
+} from './discovery.js';
 
 export const ScanDomainInput = z.object({
-	domain: z.string()
+	domain: z.string(),
 });
 
 const scanFindingWithCheckIdSchema = z.object({
 	checkId: z.string(),
-	type: z.literal("secret"),
+	type: z.literal('secret'),
 	file: z.string(),
 	snippet: z.string(),
-	fingerprint: z.string()
+	fingerprint: z.string(),
 });
 
 export const ScanDomainOutput = z.object({
-	status: z.enum(["success", "failed"]),
+	status: z.enum(['success', 'failed']),
 	checks: z.array(checkResultSchema),
 	findings: z.array(scanFindingWithCheckIdSchema),
 	discoveredSubdomains: z.array(z.string()),
@@ -41,9 +41,9 @@ export const ScanDomainOutput = z.object({
 	subdomainAssetCoverage: z.array(
 		z.object({
 			subdomain: z.string(),
-			scannedAssetPaths: z.array(z.string())
-		})
-	)
+			scannedAssetPaths: z.array(z.string()),
+		}),
+	),
 });
 
 export type ScanDomainInput = z.infer<typeof ScanDomainInput>;
@@ -67,9 +67,9 @@ const isValidHostname = z
 	.returns(z.boolean())
 	.implement((rawHostname) => {
 		const trimmed = rawHostname.trim().toLowerCase();
-		const hostname = trimmed.endsWith(".") ? trimmed.slice(0, -1) : trimmed;
+		const hostname = trimmed.endsWith('.') ? trimmed.slice(0, -1) : trimmed;
 
-		if (hostname === "localhost") {
+		if (hostname === 'localhost') {
 			return true;
 		}
 
@@ -78,19 +78,19 @@ const isValidHostname = z
 		}
 
 		if (
-			hostname.includes("/") ||
-			hostname.includes("?") ||
-			hostname.includes("#") ||
-			hostname.includes("@") ||
-			hostname.includes(":") ||
-			hostname.includes("..") ||
-			hostname.startsWith(".") ||
-			hostname.endsWith(".")
+			hostname.includes('/') ||
+			hostname.includes('?') ||
+			hostname.includes('#') ||
+			hostname.includes('@') ||
+			hostname.includes(':') ||
+			hostname.includes('..') ||
+			hostname.startsWith('.') ||
+			hostname.endsWith('.')
 		) {
 			return false;
 		}
 
-		const labels = hostname.split(".");
+		const labels = hostname.split('.');
 
 		if (labels.length < 2) {
 			return false;
@@ -101,14 +101,14 @@ const isValidHostname = z
 				return false;
 			}
 
-			if (label.startsWith("-") || label.endsWith("-")) {
+			if (label.startsWith('-') || label.endsWith('-')) {
 				return false;
 			}
 
 			for (const char of label) {
-				const isLower = char >= "a" && char <= "z";
-				const isNumber = char >= "0" && char <= "9";
-				const isDash = char === "-";
+				const isLower = char >= 'a' && char <= 'z';
+				const isNumber = char >= '0' && char <= '9';
+				const isDash = char === '-';
 
 				if (!isLower && !isNumber && !isDash) {
 					return false;
@@ -126,7 +126,7 @@ const normalizeScanTarget = z
 	.implement((rawInput) => {
 		const input = rawInput.trim();
 
-		if (input.length === 0 || input.includes("://")) {
+		if (input.length === 0 || input.includes('://')) {
 			return null;
 		}
 
@@ -154,16 +154,16 @@ const normalizeScanTarget = z
 		}
 
 		targetUrl.hostname = normalizedHostname;
-		targetUrl.hash = "";
+		targetUrl.hash = '';
 
 		if (targetUrl.pathname.length === 0) {
-			targetUrl.pathname = "/";
+			targetUrl.pathname = '/';
 		}
 
-		if (normalizedHostname === "localhost" || normalizedHostname.endsWith(".localhost")) {
-			targetUrl.protocol = "http:";
+		if (normalizedHostname === 'localhost' || normalizedHostname.endsWith('.localhost')) {
+			targetUrl.protocol = 'http:';
 		} else {
-			targetUrl.protocol = "https:";
+			targetUrl.protocol = 'https:';
 		}
 
 		return targetUrl.toString();
@@ -186,7 +186,7 @@ const readResponseTextWithLimit = z
 		const reader = response.body.getReader();
 		const decoder = new TextDecoder();
 		let bytesRead = 0; // eslint-disable-line custom/no-mutable-variables
-		let body = ""; // eslint-disable-line custom/no-mutable-variables
+		let body = ''; // eslint-disable-line custom/no-mutable-variables
 
 		while (true) {
 			let chunkResult; // eslint-disable-line custom/no-mutable-variables
@@ -281,7 +281,7 @@ const fetchTextResource = z
 		z.number().int().positive(),
 		z.record(z.string()).optional(),
 		z.custom<Semaphore>().optional(),
-		z.string().optional()
+		z.string().optional(),
 	)
 	.returns(
 		z.promise(
@@ -290,15 +290,16 @@ const fetchTextResource = z
 					finalUrl: z.string().url(),
 					contentType: z.string(),
 					body: z.string(),
-					headers: z.record(z.string())
+					headers: z.record(z.string()),
 				})
-				.nullable()
-		)
+				.nullable(),
+		),
 	)
 	.implement(async (url, timeoutMs, maxBytes, headers, semaphore, allowedFinalHost) => {
 		const parsedUrl = new URL(url);
 		const hostname = parsedUrl.hostname.toLowerCase();
-		const isExplicitTarget = hostname === "localhost" || hostname.endsWith(".localhost") || isIP(hostname) !== 0;
+		const isExplicitTarget =
+			hostname === 'localhost' || hostname.endsWith('.localhost') || isIP(hostname) !== 0;
 		if (!isExplicitTarget) {
 			const isSafe = await resolveAndCheckHost(parsedUrl.hostname);
 			if (!isSafe) return null;
@@ -308,10 +309,10 @@ const fetchTextResource = z
 		let response: Response | null; // eslint-disable-line custom/no-mutable-variables
 		try {
 			response = await fetch(url, {
-				method: "GET",
+				method: 'GET',
 				headers,
 				signal: AbortSignal.timeout(timeoutMs),
-				redirect: "follow"
+				redirect: 'follow',
 			}).catch(() => null);
 		} finally {
 			if (semaphore) semaphore.release();
@@ -325,8 +326,7 @@ const fetchTextResource = z
 			const finalHost = new URL(response.url).hostname.toLowerCase();
 			const normalizedAllowedHost = allowedFinalHost.toLowerCase();
 			const hostAllowed =
-				finalHost === normalizedAllowedHost ||
-				isSubdomainOf(finalHost, normalizedAllowedHost);
+				finalHost === normalizedAllowedHost || isSubdomainOf(finalHost, normalizedAllowedHost);
 
 			if (!hostAllowed) {
 				return null;
@@ -343,7 +343,7 @@ const fetchTextResource = z
 			return null;
 		}
 
-		const contentType = response.headers.get("content-type") ?? "";
+		const contentType = response.headers.get('content-type') ?? '';
 		const responseHeaders: Record<string, string> = {};
 
 		response.headers.forEach((value, key) => {
@@ -354,7 +354,7 @@ const fetchTextResource = z
 			finalUrl: response.url,
 			contentType,
 			body,
-			headers: responseHeaders
+			headers: responseHeaders,
 		};
 	});
 
@@ -391,10 +391,10 @@ const fetchScriptCandidate = z
 				.object({
 					contentType: z.string(),
 					body: z.string(),
-					headers: z.record(z.string())
+					headers: z.record(z.string()),
 				})
-				.nullable()
-		)
+				.nullable(),
+		),
 	)
 	.implement(async (scriptUrl, allowedFinalHost, semaphore) => {
 		const headResponse = await fetchTextResource(
@@ -403,7 +403,7 @@ const fetchScriptCandidate = z
 			SCRIPT_HEAD_MAX_BYTES,
 			{ Range: `bytes=0-${SCRIPT_HEAD_MAX_BYTES - 1}` },
 			semaphore,
-			allowedFinalHost
+			allowedFinalHost,
 		);
 
 		if (headResponse === null) {
@@ -420,7 +420,7 @@ const fetchScriptCandidate = z
 			SCRIPT_TAIL_MAX_BYTES,
 			{ Range: `bytes=-${SCRIPT_TAIL_MAX_BYTES}` },
 			semaphore,
-			allowedFinalHost
+			allowedFinalHost,
 		);
 
 		const mergedBody =
@@ -431,7 +431,7 @@ const fetchScriptCandidate = z
 		return {
 			contentType: headResponse.contentType,
 			body: mergedBody,
-			headers: headResponse.headers
+			headers: headResponse.headers,
 		};
 	});
 
@@ -441,7 +441,8 @@ const extractScriptUrls = z
 	.returns(z.array(z.string().url()))
 	.implement((html, homepageUrl) => {
 		const sourceUrl = new URL(homepageUrl);
-		const scriptUrlRegex = /<script\b[^>]*\bsrc\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s"'=<>`]+))[^>]*>/gi;
+		const scriptUrlRegex =
+			/<script\b[^>]*\bsrc\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s"'=<>`]+))[^>]*>/gi;
 		const scriptUrls: string[] = [];
 		const seen = new Set<string>();
 
@@ -452,7 +453,7 @@ const extractScriptUrls = z
 				break;
 			}
 
-			const src = (match[1] ?? match[2] ?? match[3] ?? "").trim();
+			const src = (match[1] ?? match[2] ?? match[3] ?? '').trim();
 
 			if (src.length === 0) {
 				continue;
@@ -460,7 +461,7 @@ const extractScriptUrls = z
 
 			const lowercaseSrc = src.toLowerCase();
 
-			if (lowercaseSrc.startsWith("data:") || lowercaseSrc.startsWith("javascript:")) {
+			if (lowercaseSrc.startsWith('data:') || lowercaseSrc.startsWith('javascript:')) {
 				continue;
 			}
 
@@ -476,7 +477,7 @@ const extractScriptUrls = z
 				continue;
 			}
 
-			if (absoluteUrl.protocol !== "https:" && absoluteUrl.protocol !== "http:") {
+			if (absoluteUrl.protocol !== 'https:' && absoluteUrl.protocol !== 'http:') {
 				continue;
 			}
 
@@ -505,7 +506,7 @@ const getUrlPath = z
 		try {
 			return new URL(url).pathname.toLowerCase();
 		} catch {
-			return "";
+			return '';
 		}
 	});
 
@@ -514,11 +515,11 @@ const normalizeComparablePath = z
 	.args(z.string())
 	.returns(z.string())
 	.implement((path) => {
-		if (path === "/") {
-			return "/";
+		if (path === '/') {
+			return '/';
 		}
 
-		return path.replace(/\/+$/, "");
+		return path.replace(/\/+$/, '');
 	});
 
 const isFinalUrlWithinRequestedPath = z
@@ -528,7 +529,7 @@ const isFinalUrlWithinRequestedPath = z
 	.implement((requestedUrl, finalUrl) => {
 		const requestedPath = normalizeComparablePath(new URL(requestedUrl).pathname);
 
-		if (requestedPath === "/") {
+		if (requestedPath === '/') {
 			return true;
 		}
 
@@ -547,11 +548,11 @@ const toDirectoryUrl = z
 	.returns(z.string().url())
 	.implement((urlValue) => {
 		const parsedUrl = new URL(urlValue);
-		if (!parsedUrl.pathname.endsWith("/")) {
+		if (!parsedUrl.pathname.endsWith('/')) {
 			parsedUrl.pathname = `${parsedUrl.pathname}/`;
 		}
-		parsedUrl.search = "";
-		parsedUrl.hash = "";
+		parsedUrl.search = '';
+		parsedUrl.hash = '';
 		return parsedUrl.toString();
 	});
 
@@ -561,9 +562,9 @@ const buildSitemapCandidateUrls = z
 	.returns(z.array(z.string().url()))
 	.implement((requestedUrl, finalHomepageUrl) => {
 		const candidateUrls = [
-			new URL("sitemap.xml", toDirectoryUrl(requestedUrl)).toString(),
-			new URL("sitemap.xml", toDirectoryUrl(finalHomepageUrl)).toString(),
-			new URL("/sitemap.xml", requestedUrl).toString()
+			new URL('sitemap.xml', toDirectoryUrl(requestedUrl)).toString(),
+			new URL('sitemap.xml', toDirectoryUrl(finalHomepageUrl)).toString(),
+			new URL('/sitemap.xml', requestedUrl).toString(),
 		];
 
 		const uniqueUrls = new Set<string>();
@@ -588,17 +589,20 @@ const isLikelyJavaScript = z
 		const lowerContentType = contentType.toLowerCase();
 		const path = getUrlPath(url);
 		const looksLikeJsPath =
-			path.endsWith(".js") || path.endsWith(".mjs") || path.endsWith(".cjs") || path.includes(".js?");
+			path.endsWith('.js') ||
+			path.endsWith('.mjs') ||
+			path.endsWith('.cjs') ||
+			path.includes('.js?');
 
 		if (lowerContentType.length === 0) {
 			return looksLikeJsPath;
 		}
 
-		if (lowerContentType.includes("javascript") || lowerContentType.includes("ecmascript")) {
+		if (lowerContentType.includes('javascript') || lowerContentType.includes('ecmascript')) {
 			return true;
 		}
 
-		if (looksLikeJsPath && lowerContentType.startsWith("text/plain")) {
+		if (looksLikeJsPath && lowerContentType.startsWith('text/plain')) {
 			return true;
 		}
 
@@ -612,21 +616,21 @@ const extractSourceMapRefFromHeaders = z
 		z
 			.object({
 				url: z.string(),
-				method: sourceMapDiscoveryMethodSchema
+				method: sourceMapDiscoveryMethodSchema,
 			})
-			.nullable()
+			.nullable(),
 	)
 	.implement((headers) => {
-		const sourcemapHeader = headers["sourcemap"] ?? headers["sourcemap"];
+		const sourcemapHeader = headers['sourcemap'] ?? headers['sourcemap'];
 
-		if (typeof sourcemapHeader === "string" && sourcemapHeader.length > 0) {
-			return { url: sourcemapHeader, method: "sourcemap-header" as const };
+		if (typeof sourcemapHeader === 'string' && sourcemapHeader.length > 0) {
+			return { url: sourcemapHeader, method: 'sourcemap-header' as const };
 		}
 
-		const xSourcemapHeader = headers["x-sourcemap"] ?? headers["x-sourcemap"];
+		const xSourcemapHeader = headers['x-sourcemap'] ?? headers['x-sourcemap'];
 
-		if (typeof xSourcemapHeader === "string" && xSourcemapHeader.length > 0) {
-			return { url: xSourcemapHeader, method: "x-sourcemap-header" as const };
+		if (typeof xSourcemapHeader === 'string' && xSourcemapHeader.length > 0) {
+			return { url: xSourcemapHeader, method: 'x-sourcemap-header' as const };
 		}
 
 		return null;
@@ -639,26 +643,26 @@ const extractSourceMapRefFromBody = z
 		z
 			.object({
 				url: z.string(),
-				method: sourceMapDiscoveryMethodSchema
+				method: sourceMapDiscoveryMethodSchema,
 			})
-			.nullable()
+			.nullable(),
 	)
 	.implement((body) => {
-		const lines = body.split("\n");
+		const lines = body.split('\n');
 		let lastMatch: { url: string; method: SourceMapDiscoveryMethod } | null = null; // eslint-disable-line custom/no-mutable-variables
 
 		for (const line of lines) {
 			const standardMatch = line.match(/\/\/# sourceMappingURL=(\S+)/);
 
 			if (standardMatch?.[1]) {
-				lastMatch = { url: standardMatch[1], method: "inline-comment" as const };
+				lastMatch = { url: standardMatch[1], method: 'inline-comment' as const };
 				continue;
 			}
 
 			const legacyMatch = line.match(/\/\/@ sourceMappingURL=(\S+)/);
 
 			if (legacyMatch?.[1]) {
-				lastMatch = { url: legacyMatch[1], method: "legacy-inline-comment" as const };
+				lastMatch = { url: legacyMatch[1], method: 'legacy-inline-comment' as const };
 			}
 		}
 
@@ -676,14 +680,14 @@ const resolveSourceMapUrl = z
 	.args(z.string().url(), z.string())
 	.returns(z.string().url().nullable())
 	.implement((scriptUrl, rawMapUrl) => {
-		if (rawMapUrl.toLowerCase().startsWith("data:")) {
+		if (rawMapUrl.toLowerCase().startsWith('data:')) {
 			return null;
 		}
 
 		try {
 			const resolved = new URL(rawMapUrl, scriptUrl);
 
-			if (resolved.protocol !== "http:" && resolved.protocol !== "https:") {
+			if (resolved.protocol !== 'http:' && resolved.protocol !== 'https:') {
 				return null;
 			}
 
@@ -701,11 +705,7 @@ const resolveSourceMapUrl = z
 
 const extractSourceMapRefs = z
 	.function()
-	.args(
-		z.string().url(),
-		z.record(z.string()),
-		z.string()
-	)
+	.args(z.string().url(), z.record(z.string()), z.string())
 	.returns(z.array(z.custom<SourceMapRef>()))
 	.implement((scriptUrl, headers, body) => {
 		const headerRef = extractSourceMapRefFromHeaders(headers);
@@ -739,13 +739,9 @@ const parseHasSourcesContent = z
 		try {
 			const parsed = JSON.parse(rawBody);
 
-			if (
-				typeof parsed === "object" &&
-				parsed !== null &&
-				Array.isArray(parsed.sourcesContent)
-			) {
+			if (typeof parsed === 'object' && parsed !== null && Array.isArray(parsed.sourcesContent)) {
 				return parsed.sourcesContent.some(
-					(entry: unknown) => entry !== null && entry !== undefined
+					(entry: unknown) => entry !== null && entry !== undefined,
 				);
 			}
 
@@ -762,8 +758,9 @@ const probeSourceMap = z
 	.implement(async (ref, semaphore) => {
 		const mapParsedUrl = new URL(ref.url);
 		const hostname = mapParsedUrl.hostname.toLowerCase();
-		const isExplicitTarget = hostname === "localhost" || hostname.endsWith(".localhost") || isIP(hostname) !== 0;
-		const isSafe = isExplicitTarget || await resolveAndCheckHost(mapParsedUrl.hostname);
+		const isExplicitTarget =
+			hostname === 'localhost' || hostname.endsWith('.localhost') || isIP(hostname) !== 0;
+		const isSafe = isExplicitTarget || (await resolveAndCheckHost(mapParsedUrl.hostname));
 
 		if (!isSafe) {
 			return {
@@ -772,7 +769,7 @@ const probeSourceMap = z
 				discoveryMethod: ref.method,
 				isAccessible: false,
 				httpStatus: null,
-				hasSourcesContent: null
+				hasSourcesContent: null,
 			};
 		}
 
@@ -780,9 +777,9 @@ const probeSourceMap = z
 		let response: Response | null; // eslint-disable-line custom/no-mutable-variables
 		try {
 			response = await fetch(ref.url, {
-				method: "GET",
+				method: 'GET',
 				signal: AbortSignal.timeout(SOURCE_MAP_TIMEOUT_MS),
-				redirect: "follow"
+				redirect: 'follow',
 			}).catch(() => null);
 		} finally {
 			if (semaphore) semaphore.release();
@@ -795,7 +792,7 @@ const probeSourceMap = z
 				discoveryMethod: ref.method,
 				isAccessible: false,
 				httpStatus: null,
-				hasSourcesContent: null
+				hasSourcesContent: null,
 			};
 		}
 
@@ -807,7 +804,7 @@ const probeSourceMap = z
 				discoveryMethod: ref.method,
 				isAccessible: false,
 				httpStatus: null,
-				hasSourcesContent: null
+				hasSourcesContent: null,
 			};
 		}
 
@@ -829,7 +826,7 @@ const probeSourceMap = z
 			discoveryMethod: ref.method,
 			isAccessible,
 			httpStatus,
-			hasSourcesContent
+			hasSourcesContent,
 		};
 	});
 
@@ -840,12 +837,12 @@ const toFailedResult = z
 	.implement(() => {
 		const empty = getEmptyDiscoveryOutput();
 		return {
-			status: "failed",
+			status: 'failed',
 			checks: [],
 			findings: [],
 			discoveredSubdomains: empty.subdomains,
 			discoveryStats: empty.stats,
-			subdomainAssetCoverage: []
+			subdomainAssetCoverage: [],
 		};
 	});
 
@@ -855,17 +852,17 @@ export const buildSubdomainAssetCoverage = z
 		z.array(z.string()),
 		z.array(
 			z.object({
-				file: z.string()
-			})
-		)
+				file: z.string(),
+			}),
+		),
 	)
 	.returns(
 		z.array(
 			z.object({
 				subdomain: z.string(),
-				scannedAssetPaths: z.array(z.string())
-			})
-		)
+				scannedAssetPaths: z.array(z.string()),
+			}),
+		),
 	)
 	.implement((discoveredSubdomains, scripts) => {
 		const assetPathsByHost = new Map<string, Set<string>>();
@@ -880,27 +877,27 @@ export const buildSubdomainAssetCoverage = z
 			}
 
 			const host = parsed.hostname.toLowerCase();
-			const rawPath = parsed.pathname.length > 0 ? parsed.pathname : "/";
-			const normalizedPath = rawPath.startsWith("/") ? rawPath.slice(1) : rawPath;
-			const displayPath = normalizedPath.length > 0 ? normalizedPath : "/";
+			const rawPath = parsed.pathname.length > 0 ? parsed.pathname : '/';
+			const normalizedPath = rawPath.startsWith('/') ? rawPath.slice(1) : rawPath;
+			const displayPath = normalizedPath.length > 0 ? normalizedPath : '/';
 
 			const current = assetPathsByHost.get(host) ?? new Set<string>();
 			current.add(displayPath);
 			assetPathsByHost.set(host, current);
 		}
 
-		const sortedSubdomains = [...new Set(discoveredSubdomains.map((subdomain) => subdomain.toLowerCase()))].sort(
-			(a, b) => a.localeCompare(b)
-		);
+		const sortedSubdomains = [
+			...new Set(discoveredSubdomains.map((subdomain) => subdomain.toLowerCase())),
+		].sort((a, b) => a.localeCompare(b));
 
 		return sortedSubdomains.map((subdomain) => {
-			const scannedAssetPaths = [...(assetPathsByHost.get(subdomain) ?? new Set<string>())].sort((a, b) =>
-				a.localeCompare(b)
+			const scannedAssetPaths = [...(assetPathsByHost.get(subdomain) ?? new Set<string>())].sort(
+				(a, b) => a.localeCompare(b),
 			);
 
 			return {
 				subdomain,
-				scannedAssetPaths
+				scannedAssetPaths,
 			};
 		});
 	});
@@ -912,7 +909,7 @@ export const runChecks = z
 		z.array(checkScriptSchema),
 		z.array(z.custom<ScanCheck>()),
 		z.array(sourceMapProbeSchema).optional(),
-		z.boolean().optional()
+		z.boolean().optional(),
 	)
 	.returns(z.array(checkResultSchema))
 	.implement((domain, scripts, checks, sourceMaps, sitemapFound) => {
@@ -924,29 +921,29 @@ export const runChecks = z
 					domain,
 					scripts,
 					sourceMaps: sourceMaps ?? [],
-					sitemapFound: sitemapFound ?? true
+					sitemapFound: sitemapFound ?? true,
 				});
 
 				results.push({
 					id: check.id,
 					name: check.name,
 					description: check.description,
-					findings: checkResult.findings
+					findings: checkResult.findings,
 				});
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : "Unknown check error";
+				const errorMessage = error instanceof Error ? error.message : 'Unknown check error';
 
-				console.error("[scan-domain] Check execution failed", {
+				console.error('[scan-domain] Check execution failed', {
 					checkId: check.id,
 					domain,
-					error: errorMessage
+					error: errorMessage,
 				});
 
 				results.push({
 					id: check.id,
 					name: check.name,
 					description: check.description,
-					findings: []
+					findings: [],
 				});
 			}
 		}
@@ -975,7 +972,7 @@ export const scanDomain = z
 			HOMEPAGE_MAX_BYTES,
 			undefined,
 			semaphore,
-			baseHost
+			baseHost,
 		);
 
 		if (homepage === null) {
@@ -1013,7 +1010,7 @@ export const scanDomain = z
 			allScripts.push({
 				file: scriptUrl,
 				content: scriptResponse.body,
-				headers: scriptResponse.headers
+				headers: scriptResponse.headers,
 			});
 		}
 
@@ -1025,18 +1022,18 @@ export const scanDomain = z
 				HOMEPAGE_MAX_BYTES,
 				undefined,
 				semaphore,
-				targetHost
+				targetHost,
 			);
 
 			if (targetResponse === null) {
 				continue;
 			}
 
-			if (!targetResponse.contentType.toLowerCase().includes("text/html")) {
+			if (!targetResponse.contentType.toLowerCase().includes('text/html')) {
 				continue;
 			}
 
-			if (!targetResponse.body.toLowerCase().includes("<script")) {
+			if (!targetResponse.body.toLowerCase().includes('<script')) {
 				continue;
 			}
 
@@ -1053,7 +1050,7 @@ export const scanDomain = z
 				allScripts.push({
 					file: scriptUrl,
 					content: scriptResponse.body,
-					headers: scriptResponse.headers
+					headers: scriptResponse.headers,
 				});
 			}
 		}
@@ -1111,7 +1108,7 @@ export const scanDomain = z
 				HOMEPAGE_MAX_BYTES,
 				undefined,
 				semaphore,
-				baseHost
+				baseHost,
 			);
 
 			if (sitemapResponse !== null) {
@@ -1125,12 +1122,12 @@ export const scanDomain = z
 			finalScripts.map(({ file, content }) => ({ file, content })),
 			builtinChecks,
 			sourceMapProbes,
-			sitemapFound
+			sitemapFound,
 		);
 
 		const subdomainAssetCoverage = buildSubdomainAssetCoverage(
 			discovery.subdomains,
-			finalScripts.map((script) => ({ file: script.file }))
+			finalScripts.map((script) => ({ file: script.file })),
 		);
 
 		const findings = checks.flatMap((checkResult) => {
@@ -1140,20 +1137,20 @@ export const scanDomain = z
 					type: finding.type,
 					file: finding.file,
 					snippet: finding.snippet,
-					fingerprint: finding.fingerprint
+					fingerprint: finding.fingerprint,
 				};
 			});
 		});
 
 		return {
-			status: "success",
+			status: 'success',
 			checks,
 			findings,
 			discoveredSubdomains: discovery.subdomains,
 			discoveryStats: {
 				...discovery.stats,
-				truncated
+				truncated,
 			},
-			subdomainAssetCoverage
+			subdomainAssetCoverage,
 		};
 	});

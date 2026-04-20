@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { FC, PropsWithChildren } from "hono/jsx";
+import { z } from 'zod';
+import type { FC, PropsWithChildren } from 'hono/jsx';
 
 type ScanCardProps = PropsWithChildren<{
 	title?: string;
@@ -17,10 +17,10 @@ export const ScanCard: FC<ScanCardProps> = z
 	.implement(({ title, description, head, class: classValue, children }) => {
 		const hasHeader = Boolean(title) || Boolean(description) || Boolean(head);
 		const classes = [
-			"rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/35 md:p-5",
-			classValue ?? ""
+			'rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/35 md:p-5',
+			classValue ?? '',
 		]
-			.join(" ")
+			.join(' ')
 			.trim();
 
 		return (

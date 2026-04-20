@@ -1,8 +1,8 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
 
 export const authNavActionsPropsSchema = z.object({
-	mode: z.enum(["auth", "app"])
+	mode: z.enum(['auth', 'app']),
 });
 
 export type AuthNavActionsProps = z.infer<typeof authNavActionsPropsSchema>;
@@ -12,7 +12,7 @@ export const AuthNavActions: FC<AuthNavActionsProps> = z
 	.args(authNavActionsPropsSchema)
 	.returns(z.custom<ReturnType<FC<AuthNavActionsProps>>>())
 	.implement(({ mode }) => {
-		if (mode === "app") {
+		if (mode === 'app') {
 			return (
 				<a
 					href="/settings"

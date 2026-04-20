@@ -1,12 +1,12 @@
-import { z } from "zod";
-import type { FC } from "hono/jsx";
-import { Section } from "../components/Section.js";
-import { ScanCard } from "../components/ScanCard.js";
-import { Layout } from "../layout.js";
+import { z } from 'zod';
+import type { FC } from 'hono/jsx';
+import { Section } from '../components/Section.js';
+import { ScanCard } from '../components/ScanCard.js';
+import { Layout } from '../layout.js';
 
 export const settingsPagePropsSchema = z.object({
 	email: z.string().min(1),
-	deleteAccountUrl: z.string().min(1)
+	deleteAccountUrl: z.string().min(1),
 });
 
 export type SettingsPageProps = z.infer<typeof settingsPagePropsSchema>;
@@ -50,7 +50,10 @@ export const SettingsPage: FC<SettingsPageProps> = z
 					</Section>
 					<Section title="Danger Zone">
 						<ScanCard>
-							<p class="text-sm text-foreground">Permanently delete your account and all associated data. This action cannot be undone.</p>
+							<p class="text-sm text-foreground">
+								Permanently delete your account and all associated data. This action cannot be
+								undone.
+							</p>
 							<div class="mt-4">
 								<a
 									href={deleteAccountUrl}
