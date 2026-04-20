@@ -26,19 +26,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U secret_detector -d secret_detector"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 10s --health-timeout 5s --health-retries 5
 
       redis:
         image: redis:7.2-alpine
         ports:
           - 6379:6379
         options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout
+          5s --health-retries 5
 
     env:
       DATABASE_URL: postgresql://secret_detector:secret_detector@localhost:5432/secret_detector
@@ -70,7 +66,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           git fetch origin ${{ github.base_ref }} --deepen=50
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/${{ github.base_ref }}...HEAD -- '*.js' '*.jsx' '*.ts' '*.tsx' '*.json' '*.css' '*.scss' '*.less' '*.html' '*.md' '*.yaml' '*.yml' '*.graphql' '*.vue' '*.svelte')
           if [ -n "$CHANGED_FILES" ]; then
             echo "$CHANGED_FILES" | xargs npx prettier --check || {
               echo "::error::Prettier check failed. Run 'npm run format' locally and commit the changes."
@@ -96,19 +92,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U secret_detector -d secret_detector"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 10s --health-timeout 5s --health-retries 5
 
       redis:
         image: redis:7.2-alpine
         ports:
           - 6379:6379
         options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout
+          5s --health-retries 5
 
     env:
       DATABASE_URL: postgresql://secret_detector:secret_detector@localhost:5432/secret_detector
