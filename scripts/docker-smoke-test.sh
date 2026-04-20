@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE_NAME="${1:-secret-detector:local}"
+IMAGE_NAME="${1:-secrets-watch:local}"
 CONTAINER_NAME="smoke-test-$$"
 
 cleanup() {

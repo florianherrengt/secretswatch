@@ -23,13 +23,13 @@ export const Layout: FC<LayoutProps> = z
 					{typeof autoRefreshSeconds === 'number' && autoRefreshSeconds > 0 ? (
 						<meta http-equiv="refresh" content={String(autoRefreshSeconds)} />
 					) : null}
-					<title>{title} | Secret Detector</title>
+					<title>{title} | Secrets Watch</title>
 					<link rel="stylesheet" href="/assets/app.css" />
 					<script src="/assets/timezone-render.js"></script>
 				</head>
 				<body class="mx-auto max-w-4xl bg-background p-8 font-sans text-foreground">
 					<nav class="mb-6 flex items-center justify-between border-b border-border pb-2">
-						<strong>Secret Detector</strong>
+						<strong>Secrets Watch</strong>
 						<AuthNavActions mode={navMode} />
 					</nav>
 					{children}

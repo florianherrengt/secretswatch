@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 env:
-  IMAGE_REPO: docker.io/florianherrengt/secretsdetector
+  IMAGE_REPO: docker.io/florianherrengt/secretswatch
   PLATFORMS: linux/amd64,linux/arm64
 
 jobs:

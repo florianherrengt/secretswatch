@@ -26,7 +26,7 @@ test.describe('scan result timestamps', () => {
 		await page.getByRole('button', { name: 'Scan now' }).click();
 
 		await page.waitForURL(/\/scan\/[0-9a-f-]{36}$/, { timeout: 30_000 });
-		await expect(page).toHaveTitle('Scan Result | Secret Detector');
+		await expect(page).toHaveTitle('Scan Result | Secrets Watch');
 		await waitForScanCompletion(page);
 
 		const timeElement = page.locator('time').first();

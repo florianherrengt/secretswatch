@@ -47,7 +47,7 @@ export const requestMagicLink = z
 				to: normalizedEmail,
 				subject: 'Your login link',
 				html: `
-        <h1>Login to Secret Detector</h1>
+        <h1>Login to Secrets Watch</h1>
         <p>Click the link below to log in:</p>
         <p><a href="${loginUrl}">Login</a></p>
         <p>This link will expire in ${TOKEN_EXPIRY_MINUTES} minutes.</p>
@@ -56,9 +56,9 @@ export const requestMagicLink = z
 		} else {
 			await emailProvider.send({
 				to: normalizedEmail,
-				subject: 'Welcome to Secret Detector',
+				subject: 'Welcome to Secrets Watch',
 				html: `
-        <h1>Welcome to Secret Detector</h1>
+        <h1>Welcome to Secrets Watch</h1>
         <p>Click the link below to get started:</p>
         <p><a href="${loginUrl}">Get started</a></p>
         <p>This link will expire in ${TOKEN_EXPIRY_MINUTES} minutes.</p>

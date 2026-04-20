@@ -23,7 +23,7 @@ const waitForScanFromHome = async (page: Page) => {
 		await page.waitForURL(/\/scan(\/[0-9a-f-]{36})?$/, { timeout: 5_000 });
 
 		if (/\/scan\/[0-9a-f-]{36}$/.test(page.url())) {
-			await expect(page).toHaveTitle('Scan Result | Secret Detector');
+			await expect(page).toHaveTitle('Scan Result | Secrets Watch');
 			await waitForScanCompletion(page);
 			return;
 		}
@@ -45,7 +45,7 @@ test.describe('home page', () => {
 	test('loads and shows scan form', async ({ page }) => {
 		await page.goto('/');
 
-		await expect(page).toHaveTitle('Secret Detector');
+		await expect(page).toHaveTitle('Secrets Watch');
 		await expect(page.getByRole('button', { name: 'Scan now' })).toBeVisible();
 		await expect(page.getByRole('link', { name: 'Get started' })).toBeVisible();
 		await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
@@ -148,7 +148,7 @@ test.describe('home page', () => {
 		]);
 
 		await page.goto('/');
-		await expect(page).toHaveTitle('Secret Detector');
+		await expect(page).toHaveTitle('Secrets Watch');
 		await expect(page.getByText('Your account has been deleted.')).toHaveCount(0);
 	});
 });

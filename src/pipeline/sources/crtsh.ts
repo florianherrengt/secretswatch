@@ -30,7 +30,7 @@ const fetchCrtsh = z
 		try {
 			const response = await fetch(url, {
 				signal: AbortSignal.timeout(30_000),
-				headers: { 'User-Agent': 'secret-detector/0.1.0' },
+				headers: { 'User-Agent': 'secrets-watch/0.1.0' },
 			});
 
 			if (!response.ok) {

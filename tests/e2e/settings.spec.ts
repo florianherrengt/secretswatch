@@ -315,6 +315,6 @@ test.describe('Settings', () => {
 					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 			);
 		expect(testEmails.length).toBeGreaterThan(0);
-		expect(testEmails[0].subject).toBe('Welcome to Secret Detector');
+		expect(testEmails[0].subject).toBe('Welcome to Secrets Watch');
 	});
 });

@@ -1,6 +1,6 @@
 # Project Overview
 
-Secret Detector - a system that finds exposed secrets on real websites.
+Secrets Watch - a system that finds exposed secrets on real websites.
 
 ## Tech Stack
 - Hono (HTTP framework, server-rendered JSX)

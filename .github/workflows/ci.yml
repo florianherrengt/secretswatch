@@ -19,13 +19,13 @@ jobs:
       postgres:
         image: postgres:17.2-alpine
         env:
-          POSTGRES_DB: secret_detector
-          POSTGRES_USER: secret_detector
-          POSTGRES_PASSWORD: secret_detector
+          POSTGRES_DB: secrets_watch
+          POSTGRES_USER: secrets_watch
+          POSTGRES_PASSWORD: secrets_watch
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U secret_detector -d secret_detector"
+          --health-cmd "pg_isready -U secrets_watch -d secrets_watch"
           --health-interval 10s --health-timeout 5s --health-retries 5
 
       redis:
@@ -37,7 +37,7 @@ jobs:
           5s --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://secret_detector:secret_detector@localhost:5432/secret_detector
+      DATABASE_URL: postgresql://secrets_watch:secrets_watch@localhost:5432/secrets_watch
       REDIS_URL: redis://localhost:6379
 
     steps:
@@ -85,13 +85,13 @@ jobs:
       postgres:
         image: postgres:17.2-alpine
         env:
-          POSTGRES_DB: secret_detector
-          POSTGRES_USER: secret_detector
-          POSTGRES_PASSWORD: secret_detector
+          POSTGRES_DB: secrets_watch
+          POSTGRES_USER: secrets_watch
+          POSTGRES_PASSWORD: secrets_watch
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U secret_detector -d secret_detector"
+          --health-cmd "pg_isready -U secrets_watch -d secrets_watch"
           --health-interval 10s --health-timeout 5s --health-retries 5
 
       redis:
@@ -103,7 +103,7 @@ jobs:
           5s --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://secret_detector:secret_detector@localhost:5432/secret_detector
+      DATABASE_URL: postgresql://secrets_watch:secrets_watch@localhost:5432/secrets_watch
       REDIS_URL: redis://localhost:6379
       ADMIN_BASIC_AUTH_USERNAME: admin
       ADMIN_BASIC_AUTH_PASSWORD: changeme

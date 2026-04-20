@@ -220,7 +220,7 @@ describe('GET /sandbox/demo', () => {
 		expect(res.status).toBe(200);
 		expect(res.headers.get('content-type')).toContain('text/html');
 		const html = await res.text();
-		expect(html).toContain('Secret Detector Demo Website');
+		expect(html).toContain('Secrets Watch Demo Website');
 		expect(html).toContain('<script src="/sandbox/demo/assets/main.js"></script>');
 	});
 });
@@ -231,7 +231,7 @@ describe('GET /sandbox/demo/large', () => {
 		expect(res.status).toBe(200);
 		expect(res.headers.get('content-type')).toContain('text/html');
 		const html = await res.text();
-		expect(html).toContain('Secret Detector Demo Website');
+		expect(html).toContain('Secrets Watch Demo Website');
 		expect(html).toContain('<script src="/sandbox/demo/assets/main.large.js"></script>');
 	});
 });

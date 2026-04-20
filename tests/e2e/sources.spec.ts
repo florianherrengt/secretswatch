@@ -4,7 +4,7 @@ test.describe('Domain Sourcing', () => {
 	test('source page loads and lists sources', async ({ page }) => {
 		await page.goto('/source');
 
-		await expect(page).toHaveTitle('Domain Sourcing | Secret Detector');
+		await expect(page).toHaveTitle('Domain Sourcing | Secrets Watch');
 		await expect(page.getByRole('heading', { name: 'Domain Sourcing' })).toBeVisible();
 		await expect(page.getByRole('heading', { name: 'crt.sh' })).toBeVisible();
 		await expect(page.getByRole('heading', { name: 'Product Hunt' })).toBeVisible();

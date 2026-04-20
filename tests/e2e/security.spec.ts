@@ -185,7 +185,7 @@ test.describe('Security: Email System', () => {
 		const emailData = await getLatestEmailForRecipient(request, email);
 
 		expect(emailData).not.toBeNull();
-		expect(emailData!.subject).toBe('Welcome to Secret Detector');
+		expect(emailData!.subject).toBe('Welcome to Secrets Watch');
 
 		const magicLink = getMagicLinkFromEmail(emailData!);
 		expect(magicLink).not.toBeNull();

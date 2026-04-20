@@ -20,14 +20,14 @@ export const HomePage: FC<HomePageProps> = z
 				<head>
 					<meta charset="utf-8" />
 					<meta name="viewport" content="width=device-width, initial-scale=1" />
-					<title>Secret Detector</title>
+					<title>Secrets Watch</title>
 					<link rel="stylesheet" href="/assets/app.css" />
 				</head>
 				<body class="min-h-screen bg-background font-sans text-foreground">
 					<div class="mx-auto flex min-h-screen max-w-6xl flex-col px-4 sm:px-6">
 						<header class="py-6">
 							<div class="flex items-center justify-between rounded-xl border border-border bg-card p-4">
-								<strong class="text-lg text-foreground">Secret Detector</strong>
+								<strong class="text-lg text-foreground">Secrets Watch</strong>
 								{isLoggedIn ? (
 									<a
 										href="/domains"

@@ -44,7 +44,7 @@ test.describe('Magic Link Authentication', () => {
 					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 			)[0];
 
-			expect(latestEmail.subject).toBe('Welcome to Secret Detector');
+			expect(latestEmail.subject).toBe('Welcome to Secrets Watch');
 			expect(latestEmail.html).toContain('<a');
 			expect(latestEmail.html).toContain('/terms');
 

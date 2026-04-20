@@ -1,25 +1,25 @@
 services:
   postgres:
     image: postgres:17.2-alpine
-    container_name: secret-detector-postgres
+    container_name: secrets-watch-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: secret_detector
-      POSTGRES_USER: secret_detector
-      POSTGRES_PASSWORD: secret_detector
+      POSTGRES_DB: secrets_watch
+      POSTGRES_USER: secrets_watch
+      POSTGRES_PASSWORD: secrets_watch
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U secret_detector -d secret_detector']
+      test: ['CMD-SHELL', 'pg_isready -U secrets_watch -d secrets_watch']
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7.2-alpine
-    container_name: secret-detector-redis
+    container_name: secrets-watch-redis
     restart: unless-stopped
     ports:
       - '6379:6379'
