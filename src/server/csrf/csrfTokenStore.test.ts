@@ -1,5 +1,26 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
+
+const store = new Map<string, string>();
+
+vi.mock('../scan/redis.js', () => ({
+	ioredisClient: {
+		set: (key: string, value: string, ..._args: unknown[]) => {
+			store.set(key, value);
+			return Promise.resolve('OK');
+		},
+		get: (key: string) => Promise.resolve(store.get(key) ?? null),
+		del: (...keys: string[]) => {
+			keys.forEach((k) => store.delete(k));
+			return Promise.resolve(keys.length);
+		},
+		keys: (pattern: string) => {
+			const prefix = pattern.replace('*', '');
+			return Promise.resolve([...store.keys()].filter((k) => k.startsWith(prefix)));
+		},
+	},
+}));
+
 import { csrfTokenStore, clearCsrfTokens } from './csrfTokenStore.js';
 
 describe('csrfTokenStore', () => {
