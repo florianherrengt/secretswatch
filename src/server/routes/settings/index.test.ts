@@ -16,6 +16,16 @@ vi.mock('../../auth/middleware.js', () => ({
 			email: 'billing@example.com',
 			stripeCustomerId: null,
 		});
+		c.set('csrfToken', 'test-csrf-token');
+		await next();
+	},
+}));
+
+vi.mock('../../csrf/validateCsrf.js', () => ({
+	validateCsrfToken: async (
+		c: { set: (key: string, value: unknown) => void },
+		next: () => Promise<void>,
+	) => {
 		await next();
 	},
 }));

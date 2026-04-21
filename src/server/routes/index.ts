@@ -21,6 +21,8 @@ import { getClientIp } from '../http/clientIp.js';
 import { extractSessionId } from '../auth/middleware.js';
 import { getSession } from '../auth/index.js';
 import { flashMiddleware } from '../../lib/flash.js';
+import { csrfTokenInjection } from '../csrf/csrfToken.js';
+import { csrf } from 'hono/csrf';
 
 const app = new Hono();
 
@@ -42,6 +44,8 @@ app.route('/', healthzRoutes);
 
 app.use('/assets/*', serveStatic({ root: './' }));
 app.use('*', flashMiddleware);
+app.use('*', csrfTokenInjection);
+app.use('*', csrf());
 app.use(
 	'*',
 	z

@@ -44,6 +44,7 @@ export const createConfirmHandlers = z
 					cancelHref: parsedQuery.data.back ?? basePath,
 					confirmLabel: resolved.config.confirmLabel,
 					cancelLabel: resolved.config.cancelLabel,
+					csrfToken: c.get('csrfToken'),
 				});
 
 				return c.html(render(ConfirmPage, viewProps));

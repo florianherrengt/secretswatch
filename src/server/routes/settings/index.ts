@@ -7,7 +7,9 @@ import { buildConfirmUrl } from '../confirmQuerySchema.js';
 import { createConfirmHandlers } from '../confirmHandlerFactory.js';
 import { deleteAccount } from '../../auth/index.js';
 import { getEmailProvider } from '../../email/index.js';
-import { requireAuth } from '../../auth/middleware.js';
+import { requireAuth, extractSessionId } from '../../auth/middleware.js';
+import { validateCsrfToken } from '../../csrf/validateCsrf.js';
+import { csrfTokenStore } from '../../csrf/csrfTokenStore.js';
 import { setFlashMessage } from '../../../lib/flash.js';
 import { createBillingPortalSessionForUser } from '../../billing/customerPortal.js';
 import { isStripeConfigured } from '../../billing/config.js';
@@ -140,6 +142,7 @@ settingsRoutes.get(
 					undefined,
 					'/settings',
 				),
+				csrfToken: c.get('csrfToken'),
 			});
 
 			return c.html(render(SettingsPage, viewProps));
@@ -148,6 +151,7 @@ settingsRoutes.get(
 
 settingsRoutes.post(
 	'/billing/portal',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -188,7 +192,12 @@ const handleDeleteAccount = z
 	.returns(z.promise(z.instanceof(Response)))
 	.implement(async (c) => {
 		const user = c.get('user');
+		const sessionId = extractSessionId(c);
 		await deleteAccount(user.userId);
+
+		if (sessionId) {
+			await csrfTokenStore.del(sessionId);
+		}
 
 		try {
 			const emailProvider = getEmailProvider();
@@ -224,6 +233,7 @@ settingsRoutes.get(
 
 settingsRoutes.post(
 	'/confirm',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())

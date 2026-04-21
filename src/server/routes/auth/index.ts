@@ -5,6 +5,8 @@ import { requestMagicLink, verifyMagicLink, logout, getSession } from '../../aut
 import { extractSessionId } from '../../auth/middleware.js';
 import { render } from '../../../lib/response.js';
 import { AuthRequestPage } from '../../../views/pages/authRequest.js';
+import { validateCsrfToken } from '../../csrf/validateCsrf.js';
+import { csrfTokenStore } from '../../csrf/csrfTokenStore.js';
 
 const app = new Hono();
 
@@ -85,6 +87,7 @@ app.get(
 
 app.post(
 	'/auth/logout',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -94,6 +97,7 @@ app.post(
 
 			if (sessionId) {
 				await logout(sessionId);
+				await csrfTokenStore.del(sessionId);
 			}
 
 			const contentType = c.req.header('content-type') ?? '';

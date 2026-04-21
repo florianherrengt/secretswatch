@@ -3,6 +3,7 @@ import type { FC } from 'hono/jsx';
 import { Divider } from '../components/Divider.js';
 import { ScanCard } from '../components/ScanCard.js';
 import { Section } from '../components/Section.js';
+import { CsrfField } from '../components/CsrfField.js';
 import { Layout } from '../layout.js';
 
 export const domainListItemSchema = z.object({
@@ -14,6 +15,7 @@ export const domainListItemSchema = z.object({
 
 export const domainListPagePropsSchema = z.object({
 	domains: z.array(domainListItemSchema),
+	csrfToken: z.string().min(1),
 });
 
 export type DomainListPageProps = z.infer<typeof domainListPagePropsSchema>;
@@ -58,6 +60,7 @@ export const DomainListPage: FC<DomainListPageProps> = z
 								method="post"
 								class="flex flex-col gap-3 sm:flex-row sm:items-center"
 							>
+								<CsrfField token={props.csrfToken} />
 								<input
 									id="domain"
 									name="domain"

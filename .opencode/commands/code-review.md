@@ -84,3 +84,7 @@ Use `todowrite` to track progress.
 - No speculative praise
 - Every claim must be backed by code or reasoning
 - If you didn’t verify something → list it in **Gaps**
+
+### Output
+
+Write the generated specs in ./wip/code-review.md. Overwrite it if needed.

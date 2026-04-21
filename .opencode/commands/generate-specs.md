@@ -176,3 +176,7 @@ At minimum, include:
 If the agent could misunderstand something, the spec is incomplete.
 
 If uncertainty could have been resolved with `question` but was not asked, the spec is incomplete.
+
+### Output
+
+Write the generated specs in ./wip/specs.md. Overwrite it if needed.

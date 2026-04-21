@@ -135,7 +135,10 @@ describe('POST /domains', () => {
 	it('returns 401 when not authenticated', async () => {
 		const res = await app.request('/domains', {
 			method: 'POST',
-			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			headers: {
+				'content-type': 'application/x-www-form-urlencoded',
+				Origin: 'http://localhost',
+			},
 			body: 'domain=example.com',
 		});
 		expect(res.status).toBe(401);
@@ -153,6 +156,7 @@ describe('POST /domains/confirm', () => {
 	it('returns 401 when not authenticated', async () => {
 		const res = await app.request('/domains/confirm?token=sometoken', {
 			method: 'POST',
+			headers: { Origin: 'http://localhost' },
 		});
 		expect(res.status).toBe(401);
 	});
@@ -173,6 +177,7 @@ describe('POST /qualify', () => {
 			method: 'POST',
 			headers: {
 				'content-type': 'application/x-www-form-urlencoded',
+				Origin: 'http://localhost',
 			},
 			body: 'domain=',
 		});
@@ -187,6 +192,7 @@ describe('POST /qualify', () => {
 			method: 'POST',
 			headers: {
 				'content-type': 'application/x-www-form-urlencoded',
+				Origin: 'http://localhost',
 			},
 			body: 'domain=localhost%3A39999%2Fscenarios%2Fpem-key',
 		});
@@ -204,6 +210,7 @@ describe('POST /scan', () => {
 			method: 'POST',
 			headers: {
 				'content-type': 'application/x-www-form-urlencoded',
+				Origin: 'http://localhost',
 			},
 			body: 'domain=example.com',
 		});

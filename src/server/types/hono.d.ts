@@ -9,5 +9,6 @@ declare module 'hono' {
 			stripeCustomerId: string | null;
 		};
 		flash: string | null;
+		csrfToken: string;
 	}
 }

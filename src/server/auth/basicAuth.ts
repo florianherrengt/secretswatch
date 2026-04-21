@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Context, Next } from 'hono';
+import { timingSafeEqual } from './crypto.js';
 
 const isResponse = z
 	.function()
@@ -8,19 +9,6 @@ const isResponse = z
 	.implement((value) => {
 		return value !== null && typeof value === 'object' && 'status' in value && 'headers' in value;
 	}) as (value: unknown) => value is Response;
-
-const timingSafeEqual = z
-	.function()
-	.args(z.string(), z.string())
-	.returns(z.boolean())
-	.implement((a, b) => {
-		const bufA = new TextEncoder().encode(a);
-		const bufB = new TextEncoder().encode(b);
-		if (bufA.length !== bufB.length) {
-			return false;
-		}
-		return bufA.every((byte, i) => byte === bufB[i]) && bufA.length > 0;
-	});
 
 const parseBasicHeader = z
 	.function()

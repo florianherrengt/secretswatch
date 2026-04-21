@@ -10,6 +10,7 @@ import { db } from '../../db/client.js';
 import { domains, findings, scans, userDomains } from '../../db/schema.js';
 import { normalizeSubmittedDomain } from '../../scan/scanJob.js';
 import { requireAuth } from '../../auth/middleware.js';
+import { validateCsrfToken } from '../../csrf/validateCsrf.js';
 
 const domainRoutes = new Hono();
 
@@ -108,6 +109,7 @@ domainRoutes.get(
 					})(),
 					deleteConfirmHref: deleteConfirmHrefs[i],
 				})),
+				csrfToken: c.get('csrfToken'),
 			});
 
 			return c.html(render(DomainListPage, viewProps));
@@ -152,6 +154,7 @@ domainRoutes.get(
 
 domainRoutes.post(
 	'/confirm',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -161,6 +164,7 @@ domainRoutes.post(
 
 domainRoutes.post(
 	'/',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())
