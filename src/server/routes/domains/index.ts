@@ -3,6 +3,11 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { render } from '../../../lib/response.js';
+import {
+	domainDetailPagePropsSchema,
+	scanHistoryItemSchema,
+	DomainDetailPage,
+} from '../../../views/pages/domainDetail.js';
 import { domainListPagePropsSchema, DomainListPage } from '../../../views/pages/domainList.js';
 import { buildConfirmUrl } from '../confirmQuerySchema.js';
 import { createConfirmHandlers } from '../confirmHandlerFactory.js';
@@ -82,13 +87,8 @@ domainRoutes.get(
 			const findingCountByScanId = new Map(
 				findingCountRows.map((row) => [row.scanId, Number(row.count)]),
 			);
-			const deleteConfirmHrefs = await Promise.all(
-				rows.map((row) =>
-					buildConfirmUrl('delete_domain', user.userId, { domainId: row.id }, '/domains'),
-				),
-			);
 			const viewProps = domainListPagePropsSchema.parse({
-				domains: rows.map((row, i) => ({
+				domains: rows.map((row) => ({
 					id: row.id,
 					domain: row.domain,
 					lastCheckResult: (() => {
@@ -106,7 +106,7 @@ domainRoutes.get(
 
 						return (findingCountByScanId.get(scanId) ?? 0) > 0 ? 'issues' : 'pass';
 					})(),
-					deleteConfirmHref: deleteConfirmHrefs[i],
+					href: `/domains/${row.domain}`,
 				})),
 			});
 
@@ -157,6 +157,108 @@ domainRoutes.post(
 		.args(z.custom<Context>())
 		.returns(z.promise(z.instanceof(Response)))
 		.implement(postConfirmHandler),
+);
+
+const hostnameParamSchema = z.string().trim().min(1).max(253);
+
+const buildScanHistoryItems = z
+	.function()
+	.args(z.string().uuid())
+	.returns(z.promise(z.array(scanHistoryItemSchema)))
+	.implement(async (domainId) => {
+		const scanRows = await db
+			.select({
+				id: scans.id,
+				status: scans.status,
+				startedAt: scans.startedAt,
+				finishedAt: scans.finishedAt,
+			})
+			.from(scans)
+			.where(eq(scans.domainId, domainId))
+			.orderBy(desc(scans.startedAt));
+
+		const successfulScanIds = scanRows
+			.filter((row) => row.status === 'success')
+			.map((row) => row.id);
+
+		const findingCountMap = new Map<string, number>();
+
+		if (successfulScanIds.length > 0) {
+			const findingCountRows = await db
+				.select({
+					scanId: findings.scanId,
+					count: sql<number>`count(*)`,
+				})
+				.from(findings)
+				.where(inArray(findings.scanId, successfulScanIds))
+				.groupBy(findings.scanId);
+			for (const row of findingCountRows) {
+				findingCountMap.set(row.scanId, Number(row.count));
+			}
+		}
+
+		return scanRows.map((row) => ({
+			scanId: row.id,
+			status: row.status as 'pending' | 'success' | 'failed',
+			startedAtIso: row.startedAt.toISOString(),
+			durationMs: row.finishedAt
+				? Math.max(0, row.finishedAt.getTime() - row.startedAt.getTime())
+				: 0,
+			findingCount: row.status === 'success' ? (findingCountMap.get(row.id) ?? 0) : 0,
+		}));
+	});
+
+domainRoutes.get(
+	'/:hostname',
+	z
+		.function()
+		.args(z.custom<Context>())
+		.returns(z.custom<Response | Promise<Response>>())
+		.implement(async (c) => {
+			const rawHostname = c.req.param('hostname') ?? '';
+			const parsedHostname = hostnameParamSchema.safeParse(rawHostname);
+
+			if (!parsedHostname.success) {
+				return c.text('Not found', 404);
+			}
+
+			const hostname = parsedHostname.data;
+			const user = c.get('user');
+			const userDomainRows = await db
+				.select()
+				.from(userDomains)
+				.where(and(eq(userDomains.userId, user.userId), eq(userDomains.domain, hostname)))
+				.limit(1);
+
+			if (userDomainRows.length === 0) {
+				return c.text('Not found', 404);
+			}
+
+			const userDomainRow = userDomainRows[0];
+			const domainRows = await db
+				.select({ id: domains.id })
+				.from(domains)
+				.where(eq(domains.hostname, hostname))
+				.limit(1);
+
+			const scanHistoryItems =
+				domainRows.length > 0 ? await buildScanHistoryItems(domainRows[0].id) : [];
+
+			const deleteConfirmHref = await buildConfirmUrl(
+				'delete_domain',
+				user.userId,
+				{ domainId: userDomainRow.id },
+				`/domains/${hostname}`,
+			);
+
+			const viewProps = domainDetailPagePropsSchema.parse({
+				hostname,
+				scans: scanHistoryItems,
+				deleteConfirmHref,
+			});
+
+			return c.html(render(DomainDetailPage, viewProps));
+		}),
 );
 
 domainRoutes.post(
