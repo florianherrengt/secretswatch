@@ -15,13 +15,17 @@ import { db } from '../../db/client.js';
 import { domains, findings, scans, userDomains } from '../../db/schema.js';
 import { normalizeSubmittedDomain } from '../../scan/scanJob.js';
 import { requireAuth } from '../../auth/middleware.js';
+import { hostnameSchema } from '../hostnameSchema.js';
+import { scanStatusSchema } from '../../../schemas/scan.js';
 
 const domainRoutes = new Hono();
 
 domainRoutes.use('*', requireAuth);
 
+const hostnameParamSchema = z.string().trim().min(1).max(2048);
+
 const addDomainFormSchema = z.object({
-	domain: z.string().trim().min(1).max(2048),
+	domain: hostnameSchema,
 });
 
 const deleteDomainParamsSchema = z.object({
@@ -106,7 +110,7 @@ domainRoutes.get(
 
 						return (findingCountByScanId.get(scanId) ?? 0) > 0 ? 'issues' : 'pass';
 					})(),
-					href: `/domains/${row.domain}`,
+					href: `/domains/${encodeURIComponent(row.domain)}`,
 				})),
 			});
 
@@ -159,8 +163,6 @@ domainRoutes.post(
 		.implement(postConfirmHandler),
 );
 
-const hostnameParamSchema = z.string().trim().min(1).max(253);
-
 const buildScanHistoryItems = z
 	.function()
 	.args(z.string().uuid())
@@ -199,7 +201,7 @@ const buildScanHistoryItems = z
 
 		return scanRows.map((row) => ({
 			scanId: row.id,
-			status: row.status as 'pending' | 'success' | 'failed',
+			status: scanStatusSchema.parse(row.status),
 			startedAtIso: row.startedAt.toISOString(),
 			durationMs: row.finishedAt
 				? Math.max(0, row.finishedAt.getTime() - row.startedAt.getTime())
@@ -248,7 +250,7 @@ domainRoutes.get(
 				'delete_domain',
 				user.userId,
 				{ domainId: userDomainRow.id },
-				`/domains/${hostname}`,
+				`/domains/${encodeURIComponent(hostname)}`,
 			);
 
 			const viewProps = domainDetailPagePropsSchema.parse({

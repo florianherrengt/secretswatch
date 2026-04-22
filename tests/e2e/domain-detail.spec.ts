@@ -193,7 +193,7 @@ test.describe('Domain list: modified for domain detail links', () => {
 		await expect(link).toHaveAttribute('href', `/domains/${hostname}`);
 	});
 
-	test('each domain row has only domain link and scan now — no delete', async ({
+	test('each domain row has only domain link — no delete', async ({
 		authedPage,
 		request,
 		authHeaders,
@@ -208,10 +208,6 @@ test.describe('Domain list: modified for domain detail links', () => {
 		await expect(row).toBeVisible();
 
 		await expect(row.getByRole('link', { name: hostname, exact: true })).toBeVisible();
-
-		await expect(
-			row.locator('form[action="/scan"] button[type="submit"]', { hasText: 'Scan now' }),
-		).toBeVisible();
 
 		await expect(row.getByRole('link', { name: 'Delete' })).toHaveCount(0);
 		await expect(row.getByText('Delete')).toHaveCount(0);
@@ -302,20 +298,6 @@ test.describe('Domain detail: delete flow', () => {
 	});
 });
 
-test.describe('Domain detail: auto-refresh on pending scans', () => {
-	test('detail page has no meta refresh when there are no scans', async ({
-		request,
-		authHeaders,
-	}) => {
-		const hostname = `pending-refresh-${UNIQUE()}.com`;
-		await addDomain(request, authHeaders, hostname);
-
-		const response = await request.get(`/domains/${hostname}`, { headers: authHeaders });
-		const html = await response.text();
-		expect(html).not.toContain('http-equiv="refresh"');
-	});
-});
-
 test.describe('Domain detail: user isolation', () => {
 	test('cannot view another users domain detail', async ({ request }) => {
 		const userA = await createAuthenticatedSession(request, `isolation-a-${UNIQUE()}@example.com`);
@@ -328,5 +310,73 @@ test.describe('Domain detail: user isolation', () => {
 			headers: { Cookie: userB.cookieHeader },
 		});
 		expect(response.status()).toBe(404);
+	});
+});
+
+test.describe('Domain detail: domains with path/query characters', () => {
+	test('detail page is reachable for domain with path', async ({ request, authHeaders }) => {
+		const input = `https://path-${UNIQUE()}.com/some/path`;
+		await addDomain(request, authHeaders, input);
+
+		const normalizedDomain = `path-${input.split('//')[1]}`;
+		const encoded = encodeURIComponent(normalizedDomain);
+
+		const response = await request.get(`/domains/${encoded}`, { headers: authHeaders });
+		expect(response.status()).toBe(200);
+		const html = await response.text();
+		expect(html).toContain(normalizedDomain);
+	});
+
+	test('detail page is reachable for domain with query string', async ({
+		request,
+		authHeaders,
+	}) => {
+		const input = `https://query-${UNIQUE()}.com?x=1&y=2`;
+		await addDomain(request, authHeaders, input);
+
+		const normalizedDomain = input.replace('https://', '');
+		const encoded = encodeURIComponent(normalizedDomain);
+
+		const response = await request.get(`/domains/${encoded}`, { headers: authHeaders });
+		expect(response.status()).toBe(200);
+		const html = await response.text();
+		expect(html).toContain(normalizedDomain);
+	});
+
+	test('domain list uses encoded href for domains with path', async ({ request, authHeaders }) => {
+		const input = `https://href-${UNIQUE()}.com/app`;
+		await addDomain(request, authHeaders, input);
+
+		const normalizedDomain = input.replace('https://', '');
+		const encoded = encodeURIComponent(normalizedDomain);
+
+		const response = await request.get('/domains', { headers: authHeaders });
+		const html = await response.text();
+		expect(html).toContain(`href="/domains/${encoded}"`);
+	});
+
+	test('delete flow works for domain with path', async ({ authedPage, request, authHeaders }) => {
+		const input = `https://del-path-${UNIQUE()}.com/api`;
+		await addDomain(request, authHeaders, input);
+
+		const normalizedDomain = input.replace('https://', '');
+		const encoded = encodeURIComponent(normalizedDomain);
+
+		const page = authedPage;
+		await page.goto(`/domains/${encoded}`);
+
+		await expect(page.locator('h1')).toContainText(normalizedDomain);
+
+		const deleteLink = page.getByRole('link', { name: 'Delete' });
+		await expect(deleteLink).toBeVisible();
+
+		await deleteLink.click();
+		await expect(page.locator('h1')).toContainText('Delete Domain');
+
+		await page.getByRole('button', { name: 'Delete' }).click();
+		await page.waitForURL('/domains');
+
+		const html = await page.content();
+		expect(html).not.toContain(normalizedDomain);
 	});
 });

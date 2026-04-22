@@ -50,7 +50,6 @@ export const DomainDetailPage: FC<DomainDetailPageProps> = z
 	.args(domainDetailPagePropsSchema)
 	.returns(z.custom<ReturnType<FC<DomainDetailPageProps>>>())
 	.implement((props) => {
-		const hasPending = props.scans.some((scan) => scan.status === 'pending');
 		const headerActions = (
 			<div class="flex items-center gap-3">
 				<form action="/scan" method="post" class="inline-flex">
@@ -69,11 +68,7 @@ export const DomainDetailPage: FC<DomainDetailPageProps> = z
 		);
 
 		return (
-			<Layout
-				title={props.hostname}
-				topNavMode="app"
-				autoRefreshSeconds={hasPending ? 1 : undefined}
-			>
+			<Layout title={props.hostname} topNavMode="app">
 				<div class="space-y-8">
 					<PageHeader title={props.hostname} action={headerActions} />
 

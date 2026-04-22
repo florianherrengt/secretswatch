@@ -98,12 +98,6 @@ export const DomainListPage: FC<DomainListPageProps> = z
 													<span class="text-sm font-medium">{item.domain}</span>
 													{renderLastCheck(item.lastCheckResult)}
 												</a>
-												<form action="/scan" method="post" class="shrink-0">
-													<input type="hidden" name="domain" value={item.domain} />
-													<button type="submit" class="text-sm text-foreground underline">
-														Scan now
-													</button>
-												</form>
 											</li>
 										);
 									})}

@@ -21,6 +21,7 @@ import { ioredisClient } from '../../scan/redis.js';
 import { extractSessionId } from '../../auth/middleware.js';
 import { getSession } from '../../auth/index.js';
 import { getClientIp } from '../../http/clientIp.js';
+import { hostnameSchema } from '../hostnameSchema.js';
 
 const scanRoutes = new Hono();
 
@@ -251,6 +252,14 @@ scanRoutes.post(
 				}
 
 				const normalizedDomain = normalizeSubmittedDomain(parsedForm.data.domain);
+
+				const parsedHostname = hostnameSchema.safeParse(normalizedDomain);
+				if (!parsedHostname.success) {
+					return c.html(
+						render(ErrorPage, { title: 'Bad Request', message: 'Invalid domain input.' }),
+						400,
+					);
+				}
 
 				const isReachable = await checkDomainReachability(normalizedDomain);
 
