@@ -10,7 +10,7 @@ export const domainListItemSchema = z.object({
 	id: z.string().uuid(),
 	domain: z.string(),
 	lastCheckResult: z.enum(['pass', 'issues', 'none']),
-	deleteConfirmHref: z.string().min(1),
+	href: z.string().min(1),
 });
 
 export const domainListPagePropsSchema = z.object({
@@ -94,21 +94,13 @@ export const DomainListPage: FC<DomainListPageProps> = z
 												key={item.id}
 												class="flex items-center justify-between gap-3 rounded-md border border-border px-4 py-3"
 											>
-												<div class="flex items-center gap-3">
-													<span class="text-sm font-medium text-foreground">{item.domain}</span>
+												<a
+													href={item.href}
+													class="flex flex-1 items-center gap-3 text-foreground hover:underline"
+												>
+													<span class="text-sm font-medium">{item.domain}</span>
 													{renderLastCheck(item.lastCheckResult)}
-												</div>
-												<div class="flex items-center gap-4">
-													<form action="/scan" method="post">
-														<input type="hidden" name="domain" value={item.domain} />
-														<button type="submit" class="text-sm text-foreground underline">
-															Scan now
-														</button>
-													</form>
-													<a href={item.deleteConfirmHref} class="text-sm text-error underline">
-														Delete
-													</a>
-												</div>
+												</a>
 											</li>
 										);
 									})}

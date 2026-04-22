@@ -47,7 +47,6 @@ export const HomePage: FC<HomePageProps> = z
 							</div>
 						) : null}
 
-						{/* eslint-disable-next-line custom/ds-no-unapproved-class-tokens -- ds-exception: UI-102 | flex-1 centers hero within viewport below header */}
 						<section class="flex flex-1 items-center justify-center py-8">
 							<div class="w-full max-w-4xl rounded-xl border border-border bg-card p-5 sm:p-6">
 								<div class="mb-6 space-y-2 text-center">

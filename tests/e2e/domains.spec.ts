@@ -85,8 +85,6 @@ test.describe('Domains', () => {
 		const listResponse = await request.get('/domains', { headers: authHeaders });
 		const html = await listResponse.text();
 		expect(html).toContain('scan-target.com');
-		expect(html).toContain('Scan now');
-		expect(html).toContain('name="domain" value="scan-target.com"');
 	});
 
 	test('returns 401 when not authenticated', async ({ request }) => {
