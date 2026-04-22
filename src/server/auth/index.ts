@@ -4,6 +4,7 @@ import { users, loginTokens, sessions, userDomains, domains } from '../db/schema
 import { eq, and, gt, isNull, inArray, ne } from 'drizzle-orm';
 import { generateToken, hashToken } from './crypto.js';
 import { getEmailProvider } from '../email/index.js';
+import { getAppBaseUrl } from '../config.js';
 
 const TOKEN_EXPIRY_MINUTES = 15;
 const SESSION_EXPIRY_DAYS = 30;
@@ -36,9 +37,8 @@ export const requestMagicLink = z
 			createdAt: new Date(),
 		});
 
-		const domain = process.env.DOMAIN || 'localhost:3000';
-		const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-		const loginUrl = `${protocol}://${domain}/auth/verify?token=${rawToken}`;
+		const baseUrl = getAppBaseUrl();
+		const loginUrl = `${baseUrl}/auth/verify?token=${rawToken}`;
 
 		const emailProvider = getEmailProvider();
 
@@ -62,7 +62,7 @@ export const requestMagicLink = z
         <p>Click the link below to get started:</p>
         <p><a href="${loginUrl}">Get started</a></p>
         <p>This link will expire in ${TOKEN_EXPIRY_MINUTES} minutes.</p>
-        <p>By signing up, you agree to our <a href="${protocol}://${domain}/terms">Terms of Service</a> and <a href="${protocol}://${domain}/privacy">Privacy Policy</a>.</p>
+        <p>By signing up, you agree to our <a href="${baseUrl}/terms">Terms of Service</a> and <a href="${baseUrl}/privacy">Privacy Policy</a>.</p>
       `,
 			});
 		}
@@ -143,28 +143,34 @@ export const getSession = z
 		),
 	)
 	.implement(async (sessionId) => {
-		const [session] = await db
-			.select()
-			.from(sessions)
-			.where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())));
-
-		if (!session) {
+		if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
 			return null;
 		}
 
-		const [user] = await db
-			.select()
-			.from(users)
-			.where(and(eq(users.id, session.userId), eq(users.isVerified, true)));
+		const [sessionUser] = await db
+			.select({
+				userId: users.id,
+				email: users.email,
+				stripeCustomerId: users.stripeCustomerId,
+			})
+			.from(sessions)
+			.innerJoin(users, eq(users.id, sessions.userId))
+			.where(
+				and(
+					eq(sessions.id, sessionId),
+					gt(sessions.expiresAt, new Date()),
+					eq(users.isVerified, true),
+				),
+			);
 
-		if (!user) {
+		if (!sessionUser) {
 			return null;
 		}
 
 		return {
-			userId: user.id,
-			email: user.email,
-			stripeCustomerId: user.stripeCustomerId,
+			userId: sessionUser.userId,
+			email: sessionUser.email,
+			stripeCustomerId: sessionUser.stripeCustomerId,
 		};
 	});
 

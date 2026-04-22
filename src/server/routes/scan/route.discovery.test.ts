@@ -18,10 +18,7 @@ vi.mock('../../db/client.js', () => ({
 
 vi.mock('../../auth/middleware.js', () => ({
 	extractSessionId: () => null,
-}));
-
-vi.mock('../../auth/index.js', () => ({
-	getSession: async () => null,
+	getSessionContextUser: async () => null,
 }));
 
 import scanRoutes from './index.js';

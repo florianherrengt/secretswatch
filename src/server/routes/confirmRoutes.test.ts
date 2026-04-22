@@ -7,6 +7,7 @@ import { db } from '../db/client.js';
 import { sessions, userDomains, users, domains, scans, findings } from '../db/schema.js';
 import { buildConfirmUrl } from './confirmQuerySchema.js';
 import { clearConfirmTokens } from '../db/confirmTokenStore.js';
+import { clearCsrfTokens } from '../csrf/csrfTokenStore.js';
 import { clearConfirmTokenRows, getConfirmTokenRow } from '../db/confirmTokenTestUtils.js';
 
 let app: Hono;
@@ -64,6 +65,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+	await clearCsrfTokens();
 	await clearConfirmTokens();
 	await clearConfirmTokenRows();
 	await db.delete(sessions).where(eq(sessions.userId, userId));
@@ -98,12 +100,20 @@ describe('confirmation routes', () => {
 		expect(token).toBeTruthy();
 		expect(await getConfirmTokenRow(token!)).not.toBeNull();
 
+		const csrfResponse = await app.request(confirmUrl, {
+			headers: authHeaders,
+		});
+		const csrfHtml = await csrfResponse.text();
+		const csrfToken = csrfHtml.match(/name="_csrf" value="([^"]+)"/)?.[1];
+
 		const response = await app.request(confirmUrl, {
 			method: 'POST',
 			headers: {
 				...authHeaders,
 				'content-type': 'application/x-www-form-urlencoded',
+				Origin: 'http://localhost',
 			},
+			body: `_csrf=${encodeURIComponent(csrfToken!)}`,
 		});
 
 		expect(response.status).toBe(302);
@@ -153,12 +163,20 @@ describe('confirmation routes', () => {
 		const confirmUrl = await buildConfirmUrl('delete_domain', userId, { domainId }, '/domains');
 		const token = new URL(confirmUrl, 'http://localhost').searchParams.get('token');
 
+		const csrfResponse = await app.request(confirmUrl, {
+			headers: authHeaders,
+		});
+		const csrfHtml = await csrfResponse.text();
+		const csrfToken = csrfHtml.match(/name="_csrf" value="([^"]+)"/)?.[1];
+
 		const response = await app.request(confirmUrl, {
 			method: 'POST',
 			headers: {
 				...authHeaders,
 				'content-type': 'application/x-www-form-urlencoded',
+				Origin: 'http://localhost',
 			},
+			body: `_csrf=${encodeURIComponent(csrfToken!)}`,
 		});
 
 		expect(response.status).toBe(302);
@@ -177,12 +195,20 @@ describe('confirmation routes', () => {
 		const confirmUrl = await buildConfirmUrl('delete_account', userId, undefined, '/settings');
 		const token = new URL(confirmUrl, 'http://localhost').searchParams.get('token');
 
+		const csrfResponse = await app.request('/settings', {
+			headers: otherAuthHeaders,
+		});
+		const csrfHtml = await csrfResponse.text();
+		const otherCsrfToken = csrfHtml.match(/name="_csrf" value="([^"]+)"/)?.[1];
+
 		const response = await app.request(confirmUrl, {
 			method: 'POST',
 			headers: {
 				...otherAuthHeaders,
 				'content-type': 'application/x-www-form-urlencoded',
+				Origin: 'http://localhost',
 			},
+			body: `_csrf=${encodeURIComponent(otherCsrfToken!)}`,
 		});
 
 		expect(response.status).toBe(400);
@@ -223,9 +249,21 @@ describe('confirmation routes', () => {
 			});
 
 			const confirmUrl = await buildConfirmUrl('delete_account', userId, undefined, '/settings');
+
+			const csrfResponse = await app.request(confirmUrl, {
+				headers: authHeaders,
+			});
+			const csrfHtml = await csrfResponse.text();
+			const csrfToken = csrfHtml.match(/name="_csrf" value="([^"]+)"/)?.[1];
+
 			const response = await app.request(confirmUrl, {
 				method: 'POST',
-				headers: { ...authHeaders, 'content-type': 'application/x-www-form-urlencoded' },
+				headers: {
+					...authHeaders,
+					'content-type': 'application/x-www-form-urlencoded',
+					Origin: 'http://localhost',
+				},
+				body: `_csrf=${encodeURIComponent(csrfToken!)}`,
 			});
 
 			expect(response.status).toBe(302);
@@ -256,9 +294,21 @@ describe('confirmation routes', () => {
 			});
 
 			const confirmUrl = await buildConfirmUrl('delete_account', userId, undefined, '/settings');
+
+			const csrfResponse = await app.request(confirmUrl, {
+				headers: authHeaders,
+			});
+			const csrfHtml = await csrfResponse.text();
+			const csrfToken = csrfHtml.match(/name="_csrf" value="([^"]+)"/)?.[1];
+
 			const response = await app.request(confirmUrl, {
 				method: 'POST',
-				headers: { ...authHeaders, 'content-type': 'application/x-www-form-urlencoded' },
+				headers: {
+					...authHeaders,
+					'content-type': 'application/x-www-form-urlencoded',
+					Origin: 'http://localhost',
+				},
+				body: `_csrf=${encodeURIComponent(csrfToken!)}`,
 			});
 
 			expect(response.status).toBe(302);
@@ -277,9 +327,21 @@ describe('confirmation routes', () => {
 				.values({ id: randomUUID(), userId, domain: hostname, createdAt: new Date() });
 
 			const confirmUrl = await buildConfirmUrl('delete_account', userId, undefined, '/settings');
+
+			const csrfResponse = await app.request(confirmUrl, {
+				headers: authHeaders,
+			});
+			const csrfHtml = await csrfResponse.text();
+			const csrfToken = csrfHtml.match(/name="_csrf" value="([^"]+)"/)?.[1];
+
 			const response = await app.request(confirmUrl, {
 				method: 'POST',
-				headers: { ...authHeaders, 'content-type': 'application/x-www-form-urlencoded' },
+				headers: {
+					...authHeaders,
+					'content-type': 'application/x-www-form-urlencoded',
+					Origin: 'http://localhost',
+				},
+				body: `_csrf=${encodeURIComponent(csrfToken!)}`,
 			});
 
 			expect(response.status).toBe(302);

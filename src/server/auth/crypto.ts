@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual as nodeTimingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 
 export const generateToken = z
@@ -8,14 +9,26 @@ export const generateToken = z
 		return crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
 	});
 
+export const timingSafeEqual = z
+	.function()
+	.args(z.string(), z.string())
+	.returns(z.boolean())
+	.implement((a, b) => {
+		const bufA = Buffer.from(a, 'utf-8');
+		const bufB = Buffer.from(b, 'utf-8');
+		if (bufA.length === 0 || bufB.length === 0) return false;
+		if (bufA.length !== bufB.length) return false;
+		try {
+			return nodeTimingSafeEqual(bufA, bufB);
+		} catch {
+			return false;
+		}
+	});
+
 export const hashToken = z
 	.function()
 	.args(z.string())
-	.returns(z.promise(z.string()))
-	.implement(async (token) => {
-		const encoder = new TextEncoder();
-		const data = encoder.encode(token);
-		const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-		const hashArray = Array.from(new Uint8Array(hashBuffer));
-		return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+	.returns(z.string())
+	.implement((token) => {
+		return createHash('sha256').update(token).digest('hex');
 	});

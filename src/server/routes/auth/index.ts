@@ -1,10 +1,13 @@
 import { z } from 'zod';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { requestMagicLink, verifyMagicLink, logout, getSession } from '../../auth/index.js';
-import { extractSessionId } from '../../auth/middleware.js';
+import { requestMagicLink, verifyMagicLink, logout } from '../../auth/index.js';
+import { extractSessionId, getSessionContextUser } from '../../auth/middleware.js';
 import { render } from '../../../lib/response.js';
 import { AuthRequestPage } from '../../../views/pages/authRequest.js';
+import { validateCsrfToken } from '../../csrf/validateCsrf.js';
+import { csrfTokenStore } from '../../csrf/csrfTokenStore.js';
+import { CLEAR_SESSION_COOKIE } from '../../config.js';
 
 const app = new Hono();
 
@@ -85,6 +88,7 @@ app.get(
 
 app.post(
 	'/auth/logout',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -94,6 +98,7 @@ app.post(
 
 			if (sessionId) {
 				await logout(sessionId);
+				await csrfTokenStore.del(sessionId);
 			}
 
 			const contentType = c.req.header('content-type') ?? '';
@@ -104,7 +109,7 @@ app.post(
 					status: 302,
 					headers: {
 						Location: '/',
-						'Set-Cookie': 'session_id=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
+						'Set-Cookie': CLEAR_SESSION_COOKIE,
 					},
 				});
 			}
@@ -113,7 +118,7 @@ app.post(
 				{ success: true },
 				{
 					headers: {
-						'Set-Cookie': 'session_id=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
+						'Set-Cookie': CLEAR_SESSION_COOKIE,
 					},
 				},
 			);
@@ -133,7 +138,7 @@ app.get(
 				return c.json({ error: 'Not authenticated' }, 401);
 			}
 
-			const user = await getSession(sessionId);
+			const user = await getSessionContextUser(c);
 
 			if (!user) {
 				return c.json({ error: 'Invalid session' }, 401);

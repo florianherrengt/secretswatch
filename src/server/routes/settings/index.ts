@@ -7,13 +7,15 @@ import { buildConfirmUrl } from '../confirmQuerySchema.js';
 import { createConfirmHandlers } from '../confirmHandlerFactory.js';
 import { deleteAccount } from '../../auth/index.js';
 import { getEmailProvider } from '../../email/index.js';
-import { requireAuth } from '../../auth/middleware.js';
+import { requireAuth, extractSessionId } from '../../auth/middleware.js';
+import { validateCsrfToken } from '../../csrf/validateCsrf.js';
+import { csrfTokenStore } from '../../csrf/csrfTokenStore.js';
 import { setFlashMessage } from '../../../lib/flash.js';
 import { createBillingPortalSessionForUser } from '../../billing/customerPortal.js';
 import { isStripeConfigured } from '../../billing/config.js';
+import { CLEAR_SESSION_COOKIE } from '../../config.js';
 
 const settingsRoutes = new Hono();
-const DEFAULT_APP_ORIGIN = 'http://localhost:3000';
 const DEFAULT_BILLING_PORTAL_RATE_LIMIT_WINDOW_MS = 60_000;
 const DEFAULT_BILLING_PORTAL_RATE_LIMIT_MAX_REQUESTS = 5;
 const MINIMUM_BILLING_PORTAL_RATE_LIMIT_WINDOW_MS = 1_000;
@@ -73,51 +75,6 @@ export const resetBillingPortalRateLimitStateForTests = z
 		billingPortalRateLimitState.requestTimesByActor.clear();
 	});
 
-const getAppOrigin = z
-	.function()
-	.args()
-	.returns(z.string())
-	.implement(() => {
-		const domain = process.env.DOMAIN?.trim();
-		if (!domain) {
-			return DEFAULT_APP_ORIGIN;
-		}
-
-		const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-		const normalizedDomain = domain.replace(/^https?:\/\//, '');
-
-		try {
-			return new URL(`${protocol}://${normalizedDomain}`).origin;
-		} catch {
-			return DEFAULT_APP_ORIGIN;
-		}
-	});
-
-const hasTrustedRequestOrigin = z
-	.function()
-	.args(z.string().optional(), z.string().optional())
-	.returns(z.boolean())
-	.implement((originHeader, refererHeader) => {
-		const appOrigin = getAppOrigin();
-
-		const headerValues = [originHeader, refererHeader];
-		for (const headerValue of headerValues) {
-			if (!headerValue) {
-				continue;
-			}
-
-			try {
-				if (new URL(headerValue).origin !== appOrigin) {
-					return false;
-				}
-			} catch {
-				return false;
-			}
-		}
-
-		return true;
-	});
-
 settingsRoutes.use('*', requireAuth);
 
 settingsRoutes.get(
@@ -140,6 +97,7 @@ settingsRoutes.get(
 					undefined,
 					'/settings',
 				),
+				csrfToken: c.get('csrfToken'),
 			});
 
 			return c.html(render(SettingsPage, viewProps));
@@ -148,6 +106,7 @@ settingsRoutes.get(
 
 settingsRoutes.post(
 	'/billing/portal',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -155,11 +114,6 @@ settingsRoutes.post(
 		.implement(async (c) => {
 			const user = c.get('user');
 			const actorKey = `user:${user.userId}`;
-
-			if (!hasTrustedRequestOrigin(c.req.header('Origin'), c.req.header('Referer'))) {
-				setFlashMessage(c, 'Invalid billing request. Please refresh and try again.');
-				return c.redirect('/settings', 302);
-			}
 
 			if (!isStripeConfigured()) {
 				setFlashMessage(c, 'Billing is not configured. Please try again later.');
@@ -188,7 +142,12 @@ const handleDeleteAccount = z
 	.returns(z.promise(z.instanceof(Response)))
 	.implement(async (c) => {
 		const user = c.get('user');
+		const sessionId = extractSessionId(c);
 		await deleteAccount(user.userId);
+
+		if (sessionId) {
+			await csrfTokenStore.del(sessionId);
+		}
 
 		try {
 			const emailProvider = getEmailProvider();
@@ -202,7 +161,7 @@ const handleDeleteAccount = z
 		}
 
 		setFlashMessage(c, 'Your account has been deleted.');
-		c.header('Set-Cookie', 'session_id=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0', {
+		c.header('Set-Cookie', CLEAR_SESSION_COOKIE, {
 			append: true,
 		});
 
@@ -224,6 +183,7 @@ settingsRoutes.get(
 
 settingsRoutes.post(
 	'/confirm',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())

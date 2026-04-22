@@ -1,26 +1,7 @@
 import { z } from 'zod';
 import type { Context, Next } from 'hono';
-
-const isResponse = z
-	.function()
-	.args(z.unknown())
-	.returns(z.boolean())
-	.implement((value) => {
-		return value !== null && typeof value === 'object' && 'status' in value && 'headers' in value;
-	}) as (value: unknown) => value is Response;
-
-const timingSafeEqual = z
-	.function()
-	.args(z.string(), z.string())
-	.returns(z.boolean())
-	.implement((a, b) => {
-		const bufA = new TextEncoder().encode(a);
-		const bufB = new TextEncoder().encode(b);
-		if (bufA.length !== bufB.length) {
-			return false;
-		}
-		return bufA.every((byte, i) => byte === bufB[i]) && bufA.length > 0;
-	});
+import { timingSafeEqual } from './crypto.js';
+import { isResponse } from './middleware.js';
 
 const parseBasicHeader = z
 	.function()

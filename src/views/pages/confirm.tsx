@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { FC } from 'hono/jsx';
 import { ScanCard } from '../components/ScanCard.js';
 import { Section } from '../components/Section.js';
+import { CsrfField } from '../components/CsrfField.js';
 import { Layout } from '../layout.js';
 
 export const confirmPagePropsSchema = z.object({
@@ -11,6 +12,7 @@ export const confirmPagePropsSchema = z.object({
 	cancelHref: z.string().min(1),
 	confirmLabel: z.string().min(1).default('Confirm'),
 	cancelLabel: z.string().min(1).default('Cancel'),
+	csrfToken: z.string().min(1),
 });
 
 export type ConfirmPageProps = z.infer<typeof confirmPagePropsSchema>;
@@ -29,6 +31,7 @@ export const ConfirmPage: FC<ConfirmPageProps> = z
 							<p class="text-sm text-foreground">{props.message}</p>
 							<div class="mt-4 flex items-center gap-3">
 								<form action={props.confirmAction} method="post">
+									<CsrfField token={props.csrfToken} />
 									<button
 										type="submit"
 										class="rounded-md bg-error px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-error/90"

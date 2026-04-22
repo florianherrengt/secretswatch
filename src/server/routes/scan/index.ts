@@ -18,8 +18,7 @@ import {
 	upsertDomainRecord,
 } from '../../scan/scanJob.js';
 import { ioredisClient } from '../../scan/redis.js';
-import { extractSessionId } from '../../auth/middleware.js';
-import { getSession } from '../../auth/index.js';
+import { getSessionContextUser } from '../../auth/middleware.js';
 import { getClientIp } from '../../http/clientIp.js';
 import { hostnameSchema } from '../hostnameSchema.js';
 
@@ -197,8 +196,7 @@ scanRoutes.post(
 		.returns(z.custom<Response | Promise<Response>>())
 		.implement(async (c) => {
 			const clientIp = getClientIp(c);
-			const sessionId = extractSessionId(c);
-			const session = sessionId ? await getSession(sessionId) : null;
+			const session = await getSessionContextUser(c);
 			const body = await c.req.parseBody();
 			const parsedForm = scanFormSchema.safeParse({
 				domain: typeof body.domain === 'string' ? body.domain : '',
@@ -289,8 +287,7 @@ scanRoutes.get(
 		.args(z.custom<Context>())
 		.returns(z.custom<Response | Promise<Response>>())
 		.implement(async (c) => {
-			const sessionId = extractSessionId(c);
-			const session = sessionId ? await getSession(sessionId) : null;
+			const session = await getSessionContextUser(c);
 			const topNavMode = session ? 'app' : 'auth';
 
 			const params = scanParamsSchema.safeParse(c.req.param());

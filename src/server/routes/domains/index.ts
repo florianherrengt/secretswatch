@@ -15,6 +15,7 @@ import { db } from '../../db/client.js';
 import { domains, findings, scans, userDomains } from '../../db/schema.js';
 import { normalizeSubmittedDomain } from '../../scan/scanJob.js';
 import { requireAuth } from '../../auth/middleware.js';
+import { validateCsrfToken } from '../../csrf/validateCsrf.js';
 import { hostnameSchema } from '../hostnameSchema.js';
 import { scanStatusSchema } from '../../../schemas/scan.js';
 
@@ -112,6 +113,7 @@ domainRoutes.get(
 					})(),
 					href: `/domains/${encodeURIComponent(row.domain)}`,
 				})),
+				csrfToken: c.get('csrfToken'),
 			});
 
 			return c.html(render(DomainListPage, viewProps));
@@ -156,6 +158,7 @@ domainRoutes.get(
 
 domainRoutes.post(
 	'/confirm',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())
@@ -265,6 +268,7 @@ domainRoutes.get(
 
 domainRoutes.post(
 	'/',
+	validateCsrfToken,
 	z
 		.function()
 		.args(z.custom<Context>())
