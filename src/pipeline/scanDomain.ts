@@ -17,6 +17,7 @@ import {
 	isSubdomainOf,
 	discoveryStatsSchema,
 	getEmptyDiscoveryOutput,
+	isPrivateIp,
 	type DiscoveryOutput,
 } from './discovery.js';
 
@@ -161,6 +162,8 @@ const normalizeScanTarget = z
 		}
 
 		if (normalizedHostname === 'localhost' || normalizedHostname.endsWith('.localhost')) {
+			targetUrl.protocol = 'http:';
+		} else if (isPrivateIp(normalizedHostname)) {
 			targetUrl.protocol = 'http:';
 		} else {
 			targetUrl.protocol = 'https:';
