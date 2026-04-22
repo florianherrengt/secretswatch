@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures/authed';
-import { createAuthenticatedSession } from './support/auth';
+import { createAuthenticatedSession, getCsrfToken, withOrigin } from './support/auth';
 
 const UNIQUE = () => `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
@@ -11,12 +11,13 @@ const addDomain = async (
 	authHeaders: Record<string, string>,
 	hostname: string,
 ) => {
+	const csrfToken = await getCsrfToken(request, authHeaders);
 	const response = await request.post('/domains', {
-		headers: {
+		headers: withOrigin({
 			...authHeaders,
 			'content-type': 'application/x-www-form-urlencoded',
-		},
-		form: { domain: hostname },
+		}),
+		form: { domain: hostname, _csrf: csrfToken },
 		maxRedirects: 0,
 	});
 	expect(response.status()).toBe(302);
