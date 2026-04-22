@@ -8,7 +8,7 @@ import { render } from '../../lib/response.js';
 import { ForbiddenPage } from '../../views/pages/forbidden.js';
 
 const FORM_CONTENT_TYPE_REGEX =
-	/^\b(application\/x-www-form-urlencoded|multipart\/form-data|text\/plain)\b/i;
+	/^(application\/x-www-form-urlencoded|multipart\/form-data|text\/plain)/i;
 
 const FORBIDDEN_MESSAGE =
 	'Your request could not be verified. Please go back, refresh the page, and try again.';

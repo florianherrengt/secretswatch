@@ -72,6 +72,7 @@ describe('csrfTokenInjection', () => {
 	it('creates token atomically when session is valid and no token exists', async () => {
 		mockExtractSessionId.mockReturnValue('sid');
 		mockGetSession.mockResolvedValue({ userId: 'u1', email: 'a@b.c' });
+		mockGet.mockResolvedValue(null);
 		mockGenerateToken.mockReturnValue('new-token');
 		mockCreateIfMissing.mockResolvedValue('new-token');
 
@@ -80,14 +81,13 @@ describe('csrfTokenInjection', () => {
 		const body = (await res.json()) as { token: string | null };
 
 		expect(body.token).toBe('new-token');
-		expect(mockGet).not.toHaveBeenCalled();
+		expect(mockGet).toHaveBeenCalledWith('sid');
+		expect(mockGenerateToken).toHaveBeenCalled();
 	});
 
-	it('fetches and refreshes existing token when createIfMissing returns null', async () => {
+	it('skips createIfMissing when existing token found', async () => {
 		mockExtractSessionId.mockReturnValue('sid');
 		mockGetSession.mockResolvedValue({ userId: 'u1', email: 'a@b.c' });
-		mockGenerateToken.mockReturnValue('new-token');
-		mockCreateIfMissing.mockResolvedValue(null);
 		mockGet.mockResolvedValue('existing-token');
 		mockSet.mockResolvedValue(undefined);
 
@@ -97,14 +97,16 @@ describe('csrfTokenInjection', () => {
 
 		expect(body.token).toBe('existing-token');
 		expect(mockSet).toHaveBeenCalledWith('sid', 'existing-token', 2592000);
+		expect(mockCreateIfMissing).not.toHaveBeenCalled();
+		expect(mockGenerateToken).not.toHaveBeenCalled();
 	});
 
-	it('does not set token when token deleted between createIfMissing and get', async () => {
+	it('does not set token when get returns null and createIfMissing fails', async () => {
 		mockExtractSessionId.mockReturnValue('sid');
 		mockGetSession.mockResolvedValue({ userId: 'u1', email: 'a@b.c' });
+		mockGet.mockResolvedValue(null);
 		mockGenerateToken.mockReturnValue('new-token');
 		mockCreateIfMissing.mockResolvedValue(null);
-		mockGet.mockResolvedValue(null);
 
 		const app = createApp();
 		const res = await app.request('/');

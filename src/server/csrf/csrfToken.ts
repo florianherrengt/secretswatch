@@ -24,20 +24,18 @@ export const csrfTokenInjection = z
 			return;
 		}
 
-		const rawToken = generateToken();
-		const createdToken = await csrfTokenStore.createIfMissing(
-			sessionId,
-			rawToken,
-			CSRF_TOKEN_TTL_SECONDS,
-		);
+		const existingToken = await csrfTokenStore.get(sessionId);
+		const createdToken = existingToken
+			? null
+			: await csrfTokenStore.createIfMissing(sessionId, generateToken(), CSRF_TOKEN_TTL_SECONDS);
 
 		const csrfToken =
 			createdToken ??
 			(await (async () => {
-				const existing = await csrfTokenStore.get(sessionId);
-				if (existing) {
-					await csrfTokenStore.set(sessionId, existing, CSRF_TOKEN_TTL_SECONDS);
-					return existing;
+				const token = existingToken ?? (await csrfTokenStore.get(sessionId));
+				if (token) {
+					await csrfTokenStore.set(sessionId, token, CSRF_TOKEN_TTL_SECONDS);
+					return token;
 				}
 				return null;
 			})());
