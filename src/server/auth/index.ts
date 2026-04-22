@@ -143,28 +143,30 @@ export const getSession = z
 		),
 	)
 	.implement(async (sessionId) => {
-		const [session] = await db
-			.select()
+		const [sessionUser] = await db
+			.select({
+				userId: users.id,
+				email: users.email,
+				stripeCustomerId: users.stripeCustomerId,
+			})
 			.from(sessions)
-			.where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())));
+			.innerJoin(users, eq(users.id, sessions.userId))
+			.where(
+				and(
+					eq(sessions.id, sessionId),
+					gt(sessions.expiresAt, new Date()),
+					eq(users.isVerified, true),
+				),
+			);
 
-		if (!session) {
-			return null;
-		}
-
-		const [user] = await db
-			.select()
-			.from(users)
-			.where(and(eq(users.id, session.userId), eq(users.isVerified, true)));
-
-		if (!user) {
+		if (!sessionUser) {
 			return null;
 		}
 
 		return {
-			userId: user.id,
-			email: user.email,
-			stripeCustomerId: user.stripeCustomerId,
+			userId: sessionUser.userId,
+			email: sessionUser.email,
+			stripeCustomerId: sessionUser.stripeCustomerId,
 		};
 	});
 

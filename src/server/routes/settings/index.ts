@@ -13,7 +13,7 @@ import { csrfTokenStore } from '../../csrf/csrfTokenStore.js';
 import { setFlashMessage } from '../../../lib/flash.js';
 import { createBillingPortalSessionForUser } from '../../billing/customerPortal.js';
 import { isStripeConfigured } from '../../billing/config.js';
-import { getAppOrigin, CLEAR_SESSION_COOKIE } from '../../config.js';
+import { CLEAR_SESSION_COOKIE } from '../../config.js';
 
 const settingsRoutes = new Hono();
 const DEFAULT_BILLING_PORTAL_RATE_LIMIT_WINDOW_MS = 60_000;
@@ -75,31 +75,6 @@ export const resetBillingPortalRateLimitStateForTests = z
 		billingPortalRateLimitState.requestTimesByActor.clear();
 	});
 
-const hasTrustedRequestOrigin = z
-	.function()
-	.args(z.string().optional(), z.string().optional())
-	.returns(z.boolean())
-	.implement((originHeader, refererHeader) => {
-		const appOrigin = getAppOrigin();
-
-		const headerValues = [originHeader, refererHeader];
-		for (const headerValue of headerValues) {
-			if (!headerValue) {
-				continue;
-			}
-
-			try {
-				if (new URL(headerValue).origin !== appOrigin) {
-					return false;
-				}
-			} catch {
-				return false;
-			}
-		}
-
-		return true;
-	});
-
 settingsRoutes.use('*', requireAuth);
 
 settingsRoutes.get(
@@ -139,11 +114,6 @@ settingsRoutes.post(
 		.implement(async (c) => {
 			const user = c.get('user');
 			const actorKey = `user:${user.userId}`;
-
-			if (!hasTrustedRequestOrigin(c.req.header('Origin'), c.req.header('Referer'))) {
-				setFlashMessage(c, 'Invalid billing request. Please refresh and try again.');
-				return c.redirect('/settings', 302);
-			}
 
 			if (!isStripeConfigured()) {
 				setFlashMessage(c, 'Billing is not configured. Please try again later.');

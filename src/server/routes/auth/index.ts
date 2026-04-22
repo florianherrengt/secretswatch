@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { requestMagicLink, verifyMagicLink, logout, getSession } from '../../auth/index.js';
-import { extractSessionId } from '../../auth/middleware.js';
+import { requestMagicLink, verifyMagicLink, logout } from '../../auth/index.js';
+import { extractSessionId, getSessionContextUser } from '../../auth/middleware.js';
 import { render } from '../../../lib/response.js';
 import { AuthRequestPage } from '../../../views/pages/authRequest.js';
 import { validateCsrfToken } from '../../csrf/validateCsrf.js';
@@ -138,7 +138,7 @@ app.get(
 				return c.json({ error: 'Not authenticated' }, 401);
 			}
 
-			const user = await getSession(sessionId);
+			const user = await getSessionContextUser(c);
 
 			if (!user) {
 				return c.json({ error: 'Invalid session' }, 401);

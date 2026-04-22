@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import type { Context, Next } from 'hono';
-import { extractSessionId } from '../auth/middleware.js';
-import { getSession } from '../auth/index.js';
+import { extractSessionId, getSessionContextUser } from '../auth/middleware.js';
 import { generateToken } from '../auth/crypto.js';
 import { csrfTokenStore, CSRF_TOKEN_TTL_SECONDS } from './csrfTokenStore.js';
 
@@ -17,7 +16,7 @@ export const csrfTokenInjection = z
 			return;
 		}
 
-		const session = await getSession(sessionId);
+		const session = await getSessionContextUser(c);
 
 		if (!session) {
 			await next();

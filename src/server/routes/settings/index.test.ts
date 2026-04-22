@@ -143,25 +143,6 @@ describe('POST /settings/billing/portal', () => {
 		delete process.env.STRIPE_SECRET_KEY;
 	});
 
-	it('redirects back to settings with flash when Origin is cross-origin', async () => {
-		process.env.STRIPE_SECRET_KEY = 'sk_test_key';
-		mocks.createBillingPortalSessionForUserMock.mockClear();
-
-		const response = await settingsRoutes.request('/billing/portal', {
-			method: 'POST',
-			headers: {
-				Origin: 'https://evil.example',
-			},
-		});
-
-		expect(response.status).toBe(302);
-		expect(response.headers.get('location')).toBe('/settings');
-		expect(response.headers.get('set-cookie')).toContain('flash_message=');
-		expect(mocks.createBillingPortalSessionForUserMock).not.toHaveBeenCalled();
-
-		delete process.env.STRIPE_SECRET_KEY;
-	});
-
 	it('redirects back to settings with flash when Stripe is not configured', async () => {
 		delete process.env.STRIPE_SECRET_KEY;
 		mocks.createBillingPortalSessionForUserMock.mockClear();

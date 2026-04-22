@@ -3,8 +3,7 @@ import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { render } from '../../../lib/response.js';
 import { HomePage } from '../../../views/pages/home.js';
-import { extractSessionId } from '../../auth/middleware.js';
-import { getSession } from '../../auth/index.js';
+import { getSessionContextUser } from '../../auth/middleware.js';
 
 const homeRoutes = new Hono();
 const domainSchema = z.string().min(1);
@@ -64,8 +63,7 @@ homeRoutes.get(
 		.returns(z.promise(z.instanceof(Response)))
 		.implement(async (c) => {
 			const domain = domainSchema.parse(resolveRequestHost(c));
-			const sessionId = extractSessionId(c);
-			const session = sessionId ? await getSession(sessionId) : null;
+			const session = await getSessionContextUser(c);
 			const isLoggedIn = session !== null;
 			const flashMessage = c.get('flash');
 

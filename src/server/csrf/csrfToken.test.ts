@@ -1,19 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 
-const mockGetSession = vi.fn();
 const mockExtractSessionId = vi.fn();
+const mockGetSessionContextUser = vi.fn();
 const mockGenerateToken = vi.fn();
 const mockCreateIfMissing = vi.fn();
 const mockGet = vi.fn();
 const mockSet = vi.fn();
 
-vi.mock('../auth/index.js', () => ({
-	getSession: (...args: unknown[]) => mockGetSession(...args),
-}));
-
 vi.mock('../auth/middleware.js', () => ({
 	extractSessionId: (...args: unknown[]) => mockExtractSessionId(...args),
+	getSessionContextUser: (...args: unknown[]) => mockGetSessionContextUser(...args),
 }));
 
 vi.mock('../auth/crypto.js', () => ({
@@ -54,12 +51,12 @@ describe('csrfTokenInjection', () => {
 		const body = (await res.json()) as { token: string | null };
 
 		expect(body.token).toBeNull();
-		expect(mockGetSession).not.toHaveBeenCalled();
+		expect(mockGetSessionContextUser).not.toHaveBeenCalled();
 	});
 
 	it('skips token creation when session is invalid', async () => {
 		mockExtractSessionId.mockReturnValue('sid');
-		mockGetSession.mockResolvedValue(null);
+		mockGetSessionContextUser.mockResolvedValue(null);
 
 		const app = createApp();
 		const res = await app.request('/');
@@ -71,7 +68,7 @@ describe('csrfTokenInjection', () => {
 
 	it('creates token atomically when session is valid and no token exists', async () => {
 		mockExtractSessionId.mockReturnValue('sid');
-		mockGetSession.mockResolvedValue({ userId: 'u1', email: 'a@b.c' });
+		mockGetSessionContextUser.mockResolvedValue({ userId: 'u1', email: 'a@b.c' });
 		mockGet.mockResolvedValue(null);
 		mockGenerateToken.mockReturnValue('new-token');
 		mockCreateIfMissing.mockResolvedValue('new-token');
@@ -87,7 +84,7 @@ describe('csrfTokenInjection', () => {
 
 	it('skips createIfMissing when existing token found', async () => {
 		mockExtractSessionId.mockReturnValue('sid');
-		mockGetSession.mockResolvedValue({ userId: 'u1', email: 'a@b.c' });
+		mockGetSessionContextUser.mockResolvedValue({ userId: 'u1', email: 'a@b.c' });
 		mockGet.mockResolvedValue('existing-token');
 		mockSet.mockResolvedValue(undefined);
 
@@ -103,7 +100,7 @@ describe('csrfTokenInjection', () => {
 
 	it('does not set token when get returns null and createIfMissing fails', async () => {
 		mockExtractSessionId.mockReturnValue('sid');
-		mockGetSession.mockResolvedValue({ userId: 'u1', email: 'a@b.c' });
+		mockGetSessionContextUser.mockResolvedValue({ userId: 'u1', email: 'a@b.c' });
 		mockGet.mockResolvedValue(null);
 		mockGenerateToken.mockReturnValue('new-token');
 		mockCreateIfMissing.mockResolvedValue(null);

@@ -19,8 +19,7 @@ import settingsRoutes from './settings/index.js';
 import legalRoutes from './legal/index.js';
 import { ioredisClient } from '../scan/redis.js';
 import { getClientIp } from '../http/clientIp.js';
-import { extractSessionId } from '../auth/middleware.js';
-import { getSession } from '../auth/index.js';
+import { getSessionContextUser, sessionContextMiddleware } from '../auth/middleware.js';
 import { flashMiddleware } from '../../lib/flash.js';
 import { csrfTokenInjection } from '../csrf/csrfToken.js';
 import { csrf } from 'hono/csrf';
@@ -76,6 +75,7 @@ const csrfOriginHandler = z
 
 app.use('/assets/*', serveStatic({ root: './' }));
 app.use('*', flashMiddleware);
+app.use('*', sessionContextMiddleware);
 app.use('*', csrfTokenInjection);
 app.use(
 	'*',
@@ -96,8 +96,7 @@ app.use(
 			}
 
 			const clientIp = getClientIp(c);
-			const sessionId = extractSessionId(c);
-			const session = sessionId ? await getSession(sessionId) : null;
+			const session = await getSessionContextUser(c);
 			const rateLimitKey = session ? `user:${session.userId}` : `ip:${clientIp}`;
 
 			try {
