@@ -14,3 +14,9 @@ assets/app.css
 specs.md
 specs/*
 wip/*
+
+# Local docker compose state
+.parallel-env.json
+pg_data/
+postgres_data/
+redis_data/
