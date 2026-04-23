@@ -10,8 +10,7 @@ const expectedIndexes = [
 	{ name: 'login_tokens_token_hash_idx', table: 'login_tokens', defContains: '(token_hash)' },
 	{ name: 'login_tokens_email_idx', table: 'login_tokens', defContains: '(email)' },
 	{ name: 'user_domains_user_id_idx', table: 'user_domains', defContains: '(user_id)' },
-	{ name: 'user_domains_domain_user_id_idx', table: 'user_domains', defContains: '(domain' },
-	{ name: 'user_domains_domain_user_id_idx', table: 'user_domains', defContains: 'user_id)' },
+	{ name: 'user_domains_domain_idx', table: 'user_domains', defContains: '(domain)' },
 	{ name: 'sessions_user_id_idx', table: 'sessions', defContains: '(user_id)' },
 ];
 
@@ -19,9 +18,10 @@ describe('database indexes', () => {
 	for (const { name, table, defContains } of expectedIndexes) {
 		it(`should have index ${name} on ${table} containing ${defContains}`, async () => {
 			const result = await db.execute(
-				sql`SELECT indexdef FROM pg_indexes WHERE indexname = ${name}`,
+				sql`SELECT tablename, indexdef FROM pg_indexes WHERE indexname = ${name}`,
 			);
 			expect(result.rows.length).toBeGreaterThan(0);
+			expect(result.rows[0].tablename).toBe(table);
 			expect(result.rows[0].indexdef).toContain(defContains);
 		});
 	}

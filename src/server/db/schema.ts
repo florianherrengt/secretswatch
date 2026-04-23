@@ -124,10 +124,7 @@ export const userDomains = pgTable(
 	(table) => {
 		return {
 			userDomainsUserIdIdx: index('user_domains_user_id_idx').on(table.userId),
-			userDomainsDomainUserIdIdx: index('user_domains_domain_user_id_idx').on(
-				table.domain,
-				table.userId,
-			),
+			userDomainsDomainIdx: index('user_domains_domain_idx').on(table.domain),
 		};
 	},
 );

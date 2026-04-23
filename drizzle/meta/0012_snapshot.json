@@ -1,5 +1,5 @@
 {
-	"id": "3d420ec3-8f2a-48f4-9ed6-ba3def25c55d",
+	"id": "55eef912-56a2-4274-9c35-71f73dbb8a96",
 	"prevId": "da4d1fc6-7817-47f1-b42f-8c890802cfb4",
 	"version": "7",
 	"dialect": "postgresql",
@@ -468,17 +468,11 @@
 					"method": "btree",
 					"with": {}
 				},
-				"user_domains_domain_user_id_idx": {
-					"name": "user_domains_domain_user_id_idx",
+				"user_domains_domain_idx": {
+					"name": "user_domains_domain_idx",
 					"columns": [
 						{
 							"expression": "domain",
-							"isExpression": false,
-							"asc": true,
-							"nulls": "last"
-						},
-						{
-							"expression": "user_id",
 							"isExpression": false,
 							"asc": true,
 							"nulls": "last"
