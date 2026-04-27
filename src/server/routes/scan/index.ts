@@ -211,9 +211,9 @@ scanRoutes.post(
 			if (isPublicScan && (!parsedForm.success || !parsedForm.data.visitorFingerprint)) {
 				return c.html(
 					render(ErrorPage, {
-						title: 'Fingerprint Required',
+						title: 'Could Not Verify Your Browser',
 						message:
-							'Public scans require a browser fingerprint. Please enable JavaScript and retry.',
+							'Anonymous scans require a browser fingerprint to prevent abuse. We couldn\'t generate one, likely because an ad blocker or privacy extension is blocking it. Try disabling your ad blocker for this site, or <a href="/auth/request-link">create a free account</a> to scan without fingerprinting.',
 					}),
 					400,
 				);

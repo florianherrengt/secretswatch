@@ -73,7 +73,13 @@ export const requireAuth = z
 		const sessionId = extractSessionId(c);
 
 		if (!sessionId) {
-			return c.json({ error: 'Authentication required' }, 401);
+			return c.json(
+				{
+					error:
+						'Authentication required. Please sign in to access this feature — unauthenticated access is not allowed for security reasons.',
+				},
+				401,
+			);
 		}
 
 		const user = await getSessionContextUser(c);
