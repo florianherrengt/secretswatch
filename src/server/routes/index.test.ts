@@ -217,7 +217,7 @@ describe('POST /scan', () => {
 
 		expect(res.status).toBe(400);
 		const html = await res.text();
-		expect(html).toContain('Fingerprint Required');
+		expect(html).toContain('Could Not Verify Your Browser');
 	});
 });
 
