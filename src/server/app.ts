@@ -49,7 +49,10 @@ const boot = z
 		if (process.env.NODE_ENV !== 'test') {
 			startScanWorker();
 			startSchedulerWorker();
-			void registerHourlyScheduler();
+			// Await (not void) so a failure to register the hourly scheduler
+			// surfaces and fails boot via the surrounding .catch, instead of
+			// silently dropping the rejection and never running hourly scans.
+			await registerHourlyScheduler();
 		}
 
 		serve(
