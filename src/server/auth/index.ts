@@ -83,49 +83,52 @@ export const verifyMagicLink = z
 		const tokenHash = await hashToken(rawToken);
 		const now = new Date();
 
-		const [token] = await db
-			.update(loginTokens)
-			.set({ usedAt: now })
-			.where(
-				and(
-					eq(loginTokens.tokenHash, tokenHash),
-					gt(loginTokens.expiresAt, now),
-					isNull(loginTokens.usedAt),
-				),
-			)
-			.returning();
+		// Wrap the whole exchange in a transaction so the token is only marked
+		// used if the session is created. Previously, marking the token used
+		// (the UPDATE below) and creating the session were separate statements:
+		// a failure between them (e.g. the session insert throwing) consumed
+		// the token with no session created, locking the user out of the link
+		// they just clicked. On rollback the token stays usable and the user
+		// can retry.
+		return db.transaction(async (tx) => {
+			const [token] = await tx
+				.update(loginTokens)
+				.set({ usedAt: now })
+				.where(
+					and(
+						eq(loginTokens.tokenHash, tokenHash),
+						gt(loginTokens.expiresAt, now),
+						isNull(loginTokens.usedAt),
+					),
+				)
+				.returning();
 
-		if (!token) {
-			throw new Error('Invalid or expired token');
-		}
+			if (!token) {
+				throw new Error('Invalid or expired token');
+			}
 
-		const [existingUser] = await db.select().from(users).where(eq(users.email, token.email));
+			const [existingUser] = await tx.select().from(users).where(eq(users.email, token.email));
 
-		if (!existingUser) {
-			throw new Error('User not found');
-		}
+			if (!existingUser) {
+				throw new Error('User not found');
+			}
 
-		if (!existingUser.isVerified) {
-			await db.update(users).set({ isVerified: true }).where(eq(users.id, existingUser.id));
-		}
+			if (!existingUser.isVerified) {
+				await tx.update(users).set({ isVerified: true }).where(eq(users.id, existingUser.id));
+			}
 
-		const [user] = await db.select().from(users).where(eq(users.email, token.email));
+			const sessionId = crypto.randomUUID();
+			const sessionExpiresAt = new Date(Date.now() + SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
-		if (!user) {
-			throw new Error('Failed to create user');
-		}
+			await tx.insert(sessions).values({
+				id: sessionId,
+				userId: existingUser.id,
+				expiresAt: sessionExpiresAt,
+				createdAt: now,
+			});
 
-		const sessionId = crypto.randomUUID();
-		const sessionExpiresAt = new Date(Date.now() + SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-
-		await db.insert(sessions).values({
-			id: sessionId,
-			userId: user.id,
-			expiresAt: sessionExpiresAt,
-			createdAt: now,
+			return { sessionId, userId: existingUser.id };
 		});
-
-		return { sessionId, userId: user.id };
 	});
 
 export const getSession = z
