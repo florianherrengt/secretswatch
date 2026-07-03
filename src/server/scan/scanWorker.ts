@@ -171,6 +171,21 @@ export const startScanWorker = z
 			},
 		);
 
+		// BullMQ emits 'error' for internal worker failures (e.g. Redis issues)
+		// and 'failed' when a job throws. Without listeners these go unhandled.
+		// The job-level catch in processScanQueueJob already persists a failed
+		// scan; these handlers make worker-level failures observable instead of
+		// silently dropped, and prevent unhandled-emitter crashes.
+		scanWorker.on('error', (error) => {
+			console.error('[scan-worker] Worker error', { error: error.message });
+		});
+		scanWorker.on('failed', (job, error) => {
+			console.error('[scan-worker] Job failed', {
+				jobId: job?.id,
+				error: error.message,
+			});
+		});
+
 		console.log(`[scan-worker] Listening on queue ${scanQueueName}`);
 
 		return scanWorker;
