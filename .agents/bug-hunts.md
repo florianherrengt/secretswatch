@@ -2,13 +2,35 @@
 
 ## Current status
 
-- Last run: 2026-07-03 (run 2)
-- Last inspected commit: 6f77ac8 (on branch fix/verify-credential-checker-bugs)
+- Last run: 2026-07-04 (run 3)
+- Last inspected commit: d63e36e (on branch fix/verify-credential-checker-bugs)
 - Suggested next focus: **Auth/login-token flows** (`src/server/auth/`,
-  `login_tokens` table, token TTL/hash + timing-safe compare). Then the
-  scan-lifecycle architectural risks below (stuck-running reaper, dedup).
+  `login_tokens`, token TTL/hash + timing-safe compare). Then the job-exec
+  risks below: graceful shutdown + BullMQ retry config are the highest-impact
+  remaining items (they are why scans get stuck `pending` forever).
 
 ## Recent runs
+
+### 2026-07-04 (run 3) — job execution (worker, queue, pipeline fetch path)
+
+- Commit: d63e36e on fix/verify-credential-checker-bugs (pushed)
+- Focus: BullMQ job execution — scanWorker, scanQueue, scanJob persistence,
+  schedulerQueue, the scanDomain fetch/read path.
+- Bugs fixed:
+  1. **Worker marked failed scans as completed jobs** — pipeline
+     `status:'failed'` made processScanQueueJob `return`, so BullMQ recorded
+     the job `completed`; a failure invisible to retry/monitoring. Now throws
+     so the job outcome matches the persisted scan status. `scanWorker.ts`.
+  2. **Reader leak in readResponseTextWithLimit** — acquired a body reader and
+     returned on 3 paths without cancelling/releasing; size-limit + read-error
+     paths left the reader locked and the socket consuming in the background,
+     across hundreds of fetches/scan. Now try/finally: cancel() + releaseLock().
+     `scanDomain.ts`.
+- Tests added: `src/pipeline/readResponseTextWithLimit.test.ts` (5: truncate,
+  full body, reader-released on size-limit + normal paths, null body).
+- Verification: scan tests (28) pass; tsc/eslint clean.
+- Remaining risks: see job-exec risks below (no graceful shutdown, no retry
+  config, SSRF redirect/rebinding bypass, partial-results-as-success).
 
 ### 2026-07-03 (run 2) — scan lifecycle + commit/push
 
@@ -106,42 +128,76 @@ secrets_watch does not exist` appears, check `lsof -i :5432` for a non-
   errors and returned normally, making the route report success for a failed
   scan. Watch for try/catch that logs but doesn't rethrow around the primary
   side-effect of a function.
+- **BullMQ: `return` = job completed, `throw` = job failed** — a worker fn
+  that returns normally on an error path marks the job `completed`, hiding
+  failures from retry/monitoring. If the work failed, throw. (Caught in
+  scanWorker's `failed`-status branch.)
+- **Stream readers must be released on every path** — `getReader()` without a
+  matching `cancel()`+`releaseLock()` in `finally` leaks the socket across
+  every fetch. `cancel()` aborts the stream; `releaseLock()` clears the lock.
 
-## Open risks
+## Open risks (job execution — highest impact)
 
-- Risk: **Scan can be stuck "running" forever.** Status enum is only
-  pending/success/failed (no `running`); the row stays `pending` for the whole
-  pipeline and the UI renders `pending` as "running". A worker crash (OOM,
-  deploy, SIGKILL) between job start and `persistScanOutcome` leaves it
-  pending permanently. No reaper/sweeper cron, no BullMQ
-  stalledInterval/maxStalledCount. UI shows a forever-running scan that can't
-  be retried.
-  - Files: `src/server/db/schema.ts`, `src/server/scan/scanJob.ts`,
-    `src/server/scan/scanWorker.ts`, `StatusBadge.tsx`.
-  - Suggested follow-up: add a `running` state + worker sets it on pickup;
-    configure BullMQ stall detection; add a reaper that fails stale running
-    scans.
+- Risk: **No graceful shutdown.** `app.ts` starts the scan + scheduler workers
+  but registers no SIGTERM/SIGINT handler and never calls `worker.close()`.
+  Any deploy/restart kills in-flight jobs mid-execution; the scan row stays
+  `pending` forever (UI shows "running"). Combine with no retry → stuck.
+  - Files: `src/server/app.ts`, `src/server/scan/scanWorker.ts`,
+    `src/server/scheduler/schedulerQueue.ts`.
+  - Suggested follow-up: add `process.on('SIGTERM'/'SIGINT')` → `await
+    Promise.all([scanWorker.close(), schedulerWorker.close()])` before exit.
+- Risk: **No BullMQ retry/stall config anywhere.** No `attempts`, no
+  `stalledInterval`/`maxStalledCount` on workers, no
+  `removeOnComplete`/`removeOnFail` on queue `.add`. Defaults: jobs run once
+  (no retry), stalled jobs are never detected, Redis retains every job
+  forever. This is the root cause of "stuck running" + unbounded Redis growth.
+  - Files: `src/server/scan/scanQueue.ts`, `src/server/scan/scanWorker.ts`,
+    `src/server/scheduler/schedulerQueue.ts`.
+  - Suggested follow-up: set `attempts` + `backoff` on scan adds; configure
+    stall detection on workers; set `removeOnComplete`/`removeOnFail` TTLs.
+- Risk: **SSRF redirect / DNS-rebinding bypass.** `resolveAndCheckHost` runs
+  before `fetch(..., redirect:'follow')`, so a redirect (or low-TTL DNS) to a
+  private IP after the check is never re-validated. Affects
+  `fetchTextResource`, `probeSourceMap`, `fetchDiscoveryResource`. The final-
+  host check is a hostname *string* compare, not an IP re-check.
+  - Files: `src/pipeline/scanDomain.ts:294-330, 757-824`,
+    `src/pipeline/discovery.ts:318-344`.
+  - Suggested follow-up: disable redirect-follow and check each hop, or
+    re-run `resolveAndCheckHost` on the final resolved IP.
+- Risk: **Partial results persisted as `status:'success'`.** Every per-
+  resource fetch error is individually swallowed (`continue` on null) with no
+  error budget or partial-failure flag; the scan then returns `success` with
+  whatever it got (often "0 findings" when most targets failed). A scan that
+  errored on most subdomains looks identical to a clean scan.
+  - Files: `src/pipeline/scanDomain.ts:1006-1149`.
+  - Suggested follow-up: track failed-fetch count; if above a threshold, set
+    `status:'failed'` or surface a partial-failure indicator.
+- Risk: **No scan-level deadline.** Loops are sequential (semaphore is dead
+  weight), each fetch has its own timeout, but there's no overall abort. A
+  pathological target can hold a worker for 10+ minutes (20 subdomains × N
+  scripts × N sourcemaps, each up to its timeout). One shared Redis connection
+  serves 2 queues + 2 workers + 2 rate limiters (BullMQ blocking-subscribe
+  footgun).
+  - Files: `src/pipeline/scanDomain.ts`, `src/server/scan/redis.ts`.
+
+## Open risks (scan lifecycle)
+
 - Risk: **No scan dedup.** `createScanForDomainId` always creates a new
   pending scan + job; double-submit or hourly scheduler overlap runs the same
   domain concurrently. `dispatchScans` calls it for every domain hourly with
   no "skip if in-flight" check. The dedup helpers
   (`findOldestPendingScanRecord`, `resolveScanRecordForJob`) are dead code.
   - Files: `src/server/scan/scanJob.ts`, `src/server/scheduler/dispatchScans.ts`.
-- Risk: **Unbounded `dispatchScans` + Redis job growth.** `dispatchScans`
-  loads ALL domains (no LIMIT/pagination) and enqueues one job per domain per
-  hour. Queue `.add` sets no `removeOnComplete`/`removeOnFail`, so Redis
-  retains every job forever. One shared Redis connection serves 2 queues, 2
-  workers, and 2 rate limiters (BullMQ blocking-subscribe footgun).
-  - Files: `src/server/scheduler/dispatchScans.ts`, `src/server/scan/scanQueue.ts`,
-    `src/server/scan/redis.ts`.
+- Risk: **Unbounded `dispatchScans`.** Loads ALL domains (no LIMIT/pagination)
+  and enqueues one job per domain per hour in a serial loop.
+  - Files: `src/server/scheduler/dispatchScans.ts`.
 - Risk: **Non-atomic `persistScanOutcome`.** findings existence check, insert,
   and status UPDATE are 3 separate statements (no transaction). A crash after
   inserting findings but before the status UPDATE → a stall-retry skips
   re-inserting and marks success with partial/stale findings.
-  - Files: `src/server/scan/scanJob.ts:218-257`.
-- Risk: `/api/verify-credentials` is an unauthenticated credential-validation
-  oracle. Rate limiting is the mitigation, but there is no auth and no
-  per-credential throttling.
+  - Files: `src/server/scan/scanJob.ts:209-268`.
+
+## Recently inspected areas
 
 - Area: `src/server/routes/verify/**` (all files) + `credentialChecker.tsx`
   - Date: 2026-07-03
@@ -154,8 +210,13 @@ secrets_watch does not exist` appears, check `lsof -i :5432` for a non-
 - Area: scan submit path (`routes/scan/index.ts`, `scan/scanJob.ts`)
   - Date: 2026-07-03
   - Confidence: high (SSRF + silent-failure fixed, 5 tests added)
-  - When to revisit: when the worker/status model changes (stuck-running,
-    dedup, atomicity risks above are still open).
+  - When to revisit: when the worker/status model changes.
+- Area: job execution (`scanWorker.ts`, `scanQueue.ts`, `scanJob.ts` persist
+  path, `schedulerQueue.ts`, `scanDomain.ts` fetch/read path)
+  - Date: 2026-07-04
+  - Confidence: high (failed-status + reader-leak fixed, 5 tests added)
+  - When to revisit: when BullMQ config (attempts/stalls/graceful shutdown)
+    changes — the job-exec open risks above are still live.
 
 ## Open risks (verify feature)
 
