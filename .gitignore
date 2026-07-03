@@ -20,3 +20,6 @@ wip/*
 pg_data/
 postgres_data/
 redis_data/
+
+# Parallel worktree environments (each holds its own .env, data dirs, etc.)
+.worktrees/

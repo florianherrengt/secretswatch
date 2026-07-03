@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const ROOT = path.resolve(path.dirname(SCRIPT_PATH), '..');
-const WORKTREE_ROOT_RELATIVE = '../secrets-watch/worktrees';
+const WORKTREE_ROOT_RELATIVE = '.worktrees';
 const WORKTREE_ROOT = path.resolve(ROOT, WORKTREE_ROOT_RELATIVE);
 
 const SLOT_COUNT = 8;
@@ -70,6 +70,7 @@ async function main() {
 function parallelCreate(branch) {
 	const plan = buildPlan(branch);
 	ensureRootEnvExists();
+	ensureRootEnvParallelKeys();
 
 	const worktrees = listGitWorktrees();
 	const worktreeByPath = new Map(worktrees.map((entry) => [entry.path, entry]));
@@ -336,6 +337,43 @@ function buildPlan(branchInput) {
 function ensureRootEnvExists() {
 	if (!fs.existsSync(path.join(ROOT, '.env'))) {
 		fail(`Missing root .env at '${path.join(ROOT, '.env')}'`);
+	}
+}
+
+// The root .env is the template every worktree .env is generated from. If it
+// is missing the parallel isolation keys, the worktree overrides have nothing
+// to anchor to and DATABASE_URL/PG_PORT can silently desync (the trap that
+// broke the test suite). Backfill any missing keys with defaults that match
+// docker-compose.yml's ${VAR:-default} fallbacks so existing behavior is
+// unchanged. Only missing keys are added; existing values are preserved.
+// Defaults are defined inside the function because the top-level `main()`
+// call runs before module-bottom `const`s are initialized (temporal dead zone).
+function ensureRootEnvParallelKeys() {
+	const defaults = {
+		PG_PORT: String(DEFAULT_PG_PORT),
+		REDIS_PORT: String(DEFAULT_REDIS_PORT),
+		PG_DB_NAME: 'secrets_watch',
+		COMPOSE_PROJECT_NAME: 'secret-detector',
+		PG_CONTAINER_NAME: 'secrets-watch-postgres',
+		REDIS_CONTAINER_NAME: 'secrets-watch-redis',
+		PG_DATA_PATH: 'postgres_data',
+		REDIS_DATA_PATH: 'redis_data',
+		APP_PORT: String(DEFAULT_APP_PORT),
+	};
+	const rootEnvPath = path.join(ROOT, '.env');
+	// eslint-disable-next-line custom/no-mutable-variables
+	let content = fs.readFileSync(rootEnvPath, 'utf8');
+	const existing = parseEnvFile(rootEnvPath);
+	// eslint-disable-next-line custom/no-mutable-variables
+	let changed = false;
+	for (const [key, value] of Object.entries(defaults)) {
+		if (!existing[key]) {
+			content = upsertEnvKey(content, key, value);
+			changed = true;
+		}
+	}
+	if (changed) {
+		fs.writeFileSync(rootEnvPath, content);
 	}
 }
 

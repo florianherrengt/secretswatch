@@ -1,3 +1,9 @@
+// Load .env before importing db/redis so tests read the same DATABASE_URL /
+// REDIS_URL as the app. This is what makes parallel worktrees (each with their
+// own .env + isolated ports) work with a plain `npx vitest run` — without it,
+// the db client falls back to its hardcoded localhost:5432 default and misses
+// the worktree's isolated containers. Mirrors `src/server/app.ts`.
+import 'dotenv/config';
 import { ioredisClient } from './src/server/scan/redis.js';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
