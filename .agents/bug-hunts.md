@@ -147,47 +147,33 @@ secrets_watch does not exist` appears, check `lsof -i :5432` for a non-
 
 ## Open risks (job execution — highest impact)
 
-- Risk: **No graceful shutdown.** `app.ts` starts the scan + scheduler workers
-  but registers no SIGTERM/SIGINT handler and never calls `worker.close()`.
-  Any deploy/restart kills in-flight jobs mid-execution; the scan row stays
-  `pending` forever (UI shows "running"). Combine with no retry → stuck.
-  - Files: `src/server/app.ts`, `src/server/scan/scanWorker.ts`,
-    `src/server/scheduler/schedulerQueue.ts`.
-  - Suggested follow-up: add `process.on('SIGTERM'/'SIGINT')` → `await
-    Promise.all([scanWorker.close(), schedulerWorker.close()])` before exit.
-- Risk: **No BullMQ retry/stall config anywhere.** No `attempts`, no
-  `stalledInterval`/`maxStalledCount` on workers, no
-  `removeOnComplete`/`removeOnFail` on queue `.add`. Defaults: jobs run once
-  (no retry), stalled jobs are never detected, Redis retains every job
-  forever. This is the root cause of "stuck running" + unbounded Redis growth.
-  - Files: `src/server/scan/scanQueue.ts`, `src/server/scan/scanWorker.ts`,
-    `src/server/scheduler/schedulerQueue.ts`.
-  - Suggested follow-up: set `attempts` + `backoff` on scan adds; configure
-    stall detection on workers; set `removeOnComplete`/`removeOnFail` TTLs.
+- Risk: **No graceful shutdown.** `app.ts` starts workers but registers no
+  SIGTERM/SIGINT handler, never calls `worker.close()`. Deploy/restart kills
+  in-flight jobs → scan stays `pending` forever (UI "running"). Fix:
+  `process.on('SIGTERM'/'SIGINT')` → `await Promise.all([scanWorker.close(),
+  schedulerWorker.close()])`. Files: `app.ts`, `scanWorker.ts`,
+  `schedulerQueue.ts`.
+- Risk: **No BullMQ retry/stall config anywhere.** No `attempts`,
+  `stalledInterval`/`maxStalledCount`, `removeOnComplete`/`removeOnFail`. Jobs
+  run once (no retry), stalled jobs never detected, Redis grows forever.
+  Root cause of "stuck running" + unbounded Redis. Files: `scanQueue.ts`,
+  `scanWorker.ts`, `schedulerQueue.ts`.
 - Risk: **SSRF redirect / DNS-rebinding bypass.** `resolveAndCheckHost` runs
-  before `fetch(..., redirect:'follow')`, so a redirect (or low-TTL DNS) to a
-  private IP after the check is never re-validated. Affects
-  `fetchTextResource`, `probeSourceMap`, `fetchDiscoveryResource`. The final-
-  host check is a hostname *string* compare, not an IP re-check.
-  - Files: `src/pipeline/scanDomain.ts:294-330, 757-824`,
-    `src/pipeline/discovery.ts:318-344`.
-  - Suggested follow-up: disable redirect-follow and check each hop, or
-    re-run `resolveAndCheckHost` on the final resolved IP.
-- Risk: **Partial results persisted as `status:'success'`.** Every per-
-  resource fetch error is individually swallowed (`continue` on null) with no
-  error budget or partial-failure flag; the scan then returns `success` with
-  whatever it got (often "0 findings" when most targets failed). A scan that
-  errored on most subdomains looks identical to a clean scan.
-  - Files: `src/pipeline/scanDomain.ts:1006-1149`.
-  - Suggested follow-up: track failed-fetch count; if above a threshold, set
-    `status:'failed'` or surface a partial-failure indicator.
-- Risk: **No scan-level deadline.** Loops are sequential (semaphore is dead
-  weight), each fetch has its own timeout, but there's no overall abort. A
-  pathological target can hold a worker for 10+ minutes (20 subdomains × N
-  scripts × N sourcemaps, each up to its timeout). One shared Redis connection
-  serves 2 queues + 2 workers + 2 rate limiters (BullMQ blocking-subscribe
-  footgun).
-  - Files: `src/pipeline/scanDomain.ts`, `src/server/scan/redis.ts`.
+  before `fetch(..., redirect:'follow')`, so a redirect/low-TTL-DNS to a
+  private IP after the check is never re-validated; final-host check is a
+  hostname *string* compare, not an IP re-check. Fix: check each hop or
+  re-run on the final IP. Files: `scanDomain.ts:294-330,757-824`,
+  `discovery.ts:318-344`.
+- Risk: **Partial results persisted as `status:'success'`.** Per-resource
+  fetch errors are individually swallowed (`continue` on null), no error
+  budget; a scan that errored on most subdomains returns `success`/"0
+  findings". Fix: track failed-fetch count, fail above a threshold. Files:
+  `scanDomain.ts:1006-1149`.
+- Risk: **No scan-level deadline.** Sequential loops (semaphore is dead
+  weight), only per-fetch timeouts, no overall abort → one target can hold a
+  worker 10+ min. One shared Redis connection serves 2 queues + 2 workers + 2
+  rate limiters (BullMQ blocking-subscribe footgun). Files: `scanDomain.ts`,
+  `redis.ts`.
 
 ## Open risks (scan lifecycle)
 
