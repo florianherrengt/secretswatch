@@ -165,7 +165,7 @@ const normalizeScanTarget = z
 		return targetUrl.toString();
 	});
 
-const readResponseTextWithLimit = z
+export const readResponseTextWithLimit = z
 	.function()
 	.args(z.custom<Response>(), z.number().int().positive())
 	.returns(z.promise(z.string().nullable()))
@@ -184,39 +184,50 @@ const readResponseTextWithLimit = z
 		let bytesRead = 0; // eslint-disable-line custom/no-mutable-variables
 		let body = ''; // eslint-disable-line custom/no-mutable-variables
 
-		while (true) {
-			let chunkResult; // eslint-disable-line custom/no-mutable-variables
+		try {
+			while (true) {
+				let chunkResult; // eslint-disable-line custom/no-mutable-variables
 
-			try {
-				chunkResult = await reader.read();
-			} catch {
-				return null;
-			}
-
-			if (chunkResult.done) {
-				break;
-			}
-
-			const chunk = chunkResult.value;
-			const previousBytes = bytesRead;
-			bytesRead += chunk.byteLength;
-
-			if (bytesRead > maxBytes) {
-				const remaining = maxBytes - previousBytes;
-
-				if (remaining > 0) {
-					body += decoder.decode(chunk.subarray(0, remaining), { stream: true });
+				try {
+					chunkResult = await reader.read();
+				} catch {
+					return null;
 				}
 
-				body += decoder.decode();
-				return body;
+				if (chunkResult.done) {
+					break;
+				}
+
+				const chunk = chunkResult.value;
+				const previousBytes = bytesRead;
+				bytesRead += chunk.byteLength;
+
+				if (bytesRead > maxBytes) {
+					const remaining = maxBytes - previousBytes;
+
+					if (remaining > 0) {
+						body += decoder.decode(chunk.subarray(0, remaining), { stream: true });
+					}
+
+					body += decoder.decode();
+					return body;
+				}
+
+				body += decoder.decode(chunk, { stream: true });
 			}
 
-			body += decoder.decode(chunk, { stream: true });
+			body += decoder.decode();
+			return body;
+		} finally {
+			// Release the underlying connection on every exit path. Without this,
+			// returning on the size-limit or read-error paths left the reader
+			// locked and the socket consuming the response body in the background.
+			// cancel() propagates the abort so the server stops streaming;
+			// releaseLock() frees the reader. Safe in finally because no read()
+			// is pending once the loop has exited.
+			await reader.cancel().catch(() => {});
+			reader.releaseLock();
 		}
-
-		body += decoder.decode();
-		return body;
 	});
 
 type Semaphore = {

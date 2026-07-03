@@ -127,7 +127,12 @@ const processScanQueueJob = z
 					error: `Scan failed for domain ${domain}`,
 				});
 
-				return scanWorkerResultSchema.parse(persistedResult);
+				// Throw so BullMQ records this job as failed (not completed). The
+				// scan row has already been persisted with status='failed' by
+				// persistScanOutcome; throwing here keeps the job outcome
+				// consistent with the scan outcome and makes the failure visible
+				// to any retry/monitoring configured on the queue.
+				throw new Error(`Scan failed for domain ${domain}`);
 			}
 
 			return scanWorkerResultSchema.parse(persistedResult);
