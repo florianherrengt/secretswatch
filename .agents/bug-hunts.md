@@ -2,14 +2,38 @@
 
 ## Current status
 
-- Last run: 2026-07-04 (run 3)
-- Last inspected commit: d63e36e (on branch fix/verify-credential-checker-bugs)
-- Suggested next focus: **Auth/login-token flows** (`src/server/auth/`,
-  `login_tokens`, token TTL/hash + timing-safe compare). Then the job-exec
-  risks below: graceful shutdown + BullMQ retry config are the highest-impact
-  remaining items (they are why scans get stuck `pending` forever).
+- Last run: 2026-07-04 (run 4)
+- Last inspected commit: a732e70 (on branch fix/verify-credential-checker-bugs)
+- Suggested next focus: **Job-exec architectural fixes** (graceful SIGTERM
+  shutdown + BullMQ retry/stall config) — highest-impact remaining, eliminate
+  the "stuck pending forever" class. Then SSRF redirect re-check, then email/
+  settings routes.
 
 ## Recent runs
+
+### 2026-07-04 (run 4) — auth (magic-link, session, timing-safe compare)
+
+- Commit: a732e70 on fix/verify-credential-checker-bugs (pushed)
+- Focus: `src/server/auth/` — requestMagicLink, verifyMagicLink, getSession,
+  crypto (timingSafeEqual, hashToken, generateToken), auth routes, basicAuth.
+- Bugs fixed:
+  1. **verifyMagicLink consumed the token even when session creation failed.**
+     The token-claim UPDATE and the session INSERT were separate statements,
+     so a failure between them marked the token `usedAt` with no session → the
+     user was locked out of the link they just clicked (route swallowed the
+     error as "Invalid or expired login link"). Now the whole exchange is one
+     transaction; on rollback the token stays usable. Dropped a redundant
+     second user lookup. `src/server/auth/index.ts`.
+  2. **timingSafeEqual leaked expected length by timing** — returned
+     immediately on length mismatch but did constant-time work otherwise.
+     Now compares against a same-length dummy to equalize cost. Low severity
+     (fixed-length inputs in practice) but the name promises timing-safety.
+     `src/server/auth/crypto.ts`.
+- Tests: existing crypto (9) + CSRF (8) still pass; no new unit tests (auth
+  logic is DB-backed; covered by e2e/security.spec.ts).
+- Verification: tsc/eslint clean; 45 tests across touched suites pass.
+- Remaining risks: see auth risks below (user enumeration, magic-link flood,
+  no per-endpoint rate limit).
 
 ### 2026-07-04 (run 3) — job execution (worker, queue, pipeline fetch path)
 
@@ -55,36 +79,14 @@
 
 ### 2026-07-03 (run 1) — verify/credential-checker feature
 
-- Commit: dc7d7d2 + untracked verify feature
-- Focus areas: new `verify/` credential-checker feature (routes, providers,
-  UI page), route mounting/middleware ordering.
-- Bugs fixed:
-  1. **Rate-limit bypass** — `/api/verify-credentials` was mounted before the
-     rate limiter (CSRF skip was intentional, but no throttle on an open
-     credential-validation oracle). Moved mount after the rate limiter.
-     `src/server/routes/index.ts`.
-  2. **Credential-shape mismatch in UI** — `verify/ui.ts` passed `{ apiKey }`
-     to every verifier; github expects `{ token }`, aws expects
-     `{ accessKeyId, secretAccessKey }` → both always reported invalid. Now
-     maps per provider; AWS dropped from the single-field UI (kept in JSON API).
-  3. **Error vs invalid collapsed** — all failures returned `{ valid: false }`,
-     so a timeout told users their valid key was revoked; the spec-defined
-     "Could not verify" error badge was unreachable. Added `reason` to
-     `VerifyResponse`; UI maps `error` reason to the error badge. NOTE: had to
-     update each provider's `.returns()` zod schema — zod strips unknown keys
-     (see invariants).
-  4. **Raw enum shown in badge** — badge rendered the literal `valid`/`invalid`
-     /`error` token. Replaced with human labels (Active/Not working/Unknown).
-  5. **parseBody() could throw → 500** on malformed multipart. Guarded with
-     `.catch(() => null)`.
-  6. **Falsy JSON misreported** — `if (!bodyResult)` treated valid `false`/`0`/
-     `""` JSON as "Invalid JSON body". Changed to `=== null` sentinel check.
-- Tests added: `tests/verify/{api,ui,route-mounting}.test.ts` + rewrote all 5
-  provider tests for the new `reason` contract. 35 tests, all pass.
-- Verification: `npx vitest run --config vitest.verify.config.ts` (35 pass),
-  `tsc --noEmit` (0), `eslint` on changed files (0), design-system (0).
-  Note: full root suite needs Postgres+Redis (not run).
-- Remaining risks: see "Open risks".
+- Commit: 4811620. Focus: new `verify/` feature (routes, providers, UI page),
+  route mounting/middleware ordering. 6 bugs fixed (rate-limit bypass on the
+  open `/api/verify-credentials` oracle; UI passed `{apiKey}` to every
+  provider so github/aws always invalid; error-vs-invalid collapsed so a
+  timeout told users their key was revoked; raw enum leaked as badge text;
+  parseBody() 500 on malformed multipart; falsy JSON misreported as invalid).
+  35 tests added (`tests/verify/`). Lessons merged into Recurring patterns
+  (Hono middleware order; zod `.returns()` strips keys; per-provider shapes).
 
 ## Recurring patterns
 
@@ -135,6 +137,13 @@ secrets_watch does not exist` appears, check `lsof -i :5432` for a non-
 - **Stream readers must be released on every path** — `getReader()` without a
   matching `cancel()`+`releaseLock()` in `finally` leaks the socket across
   every fetch. `cancel()` aborts the stream; `releaseLock()` clears the lock.
+- **Token/credential consumption must be atomic with the work it unlocks** —
+  marking a token "used" then doing more DB work in separate statements leaves
+  the token consumed if the later work fails (user locked out). Wrap claim +
+  effect in one transaction. (Caught in verifyMagicLink.)
+- **`timingSafeEqual` must not short-circuit on length** — a length-mismatch
+  early return leaks the expected length by timing. Compare against a
+  same-length dummy to equalize cost before returning false.
 
 ## Open risks (job execution — highest impact)
 
@@ -197,6 +206,24 @@ secrets_watch does not exist` appears, check `lsof -i :5432` for a non-
   re-inserting and marks success with partial/stale findings.
   - Files: `src/server/scan/scanJob.ts:209-268`.
 
+## Open risks (auth)
+
+- Risk: **Magic-link flood + user creation on any email.** `requestMagicLink`
+  creates a `users` row (`isVerified:false`) and sends an email for *every*
+  request, with only the global IP rate limit. An attacker can spam arbitrary
+  addresses (email flood, user-table pollution) or enumerate which emails
+  already exist. No per-email/per-IP throttle specific to `/auth/request-link`.
+  - Files: `src/server/auth/index.ts:12-69`, `src/server/routes/auth/index.ts:25-54`.
+  - Suggested follow-up: per-email rate limit; don't persist a user row until
+    verification; constant-time "check your email" response regardless of
+    whether the email is known.
+- Risk: **Login link in URL + referrer leak.** The token travels in the query
+  string (`/auth/verify?token=...`); it can leak via Referer to any
+  third-party link in the email HTML, browser history, and server logs.
+  - Files: `src/server/auth/index.ts:41`, `src/server/routes/auth/index.ts:63`.
+  - Suggested follow-up: POST-based token exchange or strip Referer; ensure
+    logs redact the token query param.
+
 ## Recently inspected areas
 
 - Area: `src/server/routes/verify/**` (all files) + `credentialChecker.tsx`
@@ -217,30 +244,20 @@ secrets_watch does not exist` appears, check `lsof -i :5432` for a non-
   - Confidence: high (failed-status + reader-leak fixed, 5 tests added)
   - When to revisit: when BullMQ config (attempts/stalls/graceful shutdown)
     changes — the job-exec open risks above are still live.
+- Area: auth (`src/server/auth/index.ts`, `crypto.ts`, `basicAuth.ts`,
+  `routes/auth/index.ts`)
+  - Date: 2026-07-04
+  - Confidence: high (magic-link atomicity + timing leak fixed)
+  - When to revisit: when login flow / token storage changes.
 
 ## Open risks (verify feature)
 
 - Risk: `/api/verify-credentials` is an unauthenticated credential-validation
-  oracle. Rate limiting is the mitigation, but there is no auth and no
-  per-credential throttling. A determined attacker within the IP rate limit
-  can still validate leaked credential lists.
-  - Files/flows: `src/server/routes/verify/index.ts`
-  - Why it matters: abuse / egress attribution to this server.
-  - Suggested follow-up: consider adding auth, a stricter per-IP limit for this
-    endpoint, or a proof-of-work / captcha for the UI form.
-- Risk: credential-checker POST is not Post/Redirect/Get. Refresh re-runs the
-  live provider check (duplicate submission) and the submitted secret is kept
-  in browser history via the re-rendered response.
-  - Files/flows: `src/server/routes/verify/ui.ts`, `credentialChecker.tsx`
-  - Why it matters: secret hygiene + duplicate outbound calls.
-  - Suggested follow-up: PRG with flash-stored result state; do NOT reflect the
-    secret back (current design intentionally echoes it for "tweak & retry").
+  oracle (only the global IP rate limit mitigates). Add auth / stricter
+  per-endpoint limit / captcha. `src/server/routes/verify/index.ts`.
+- Risk: credential-checker POST is not Post/Redirect/Get — refresh re-runs the
+  live provider check and the submitted secret is reflected into the response
+  (kept in browser history). `src/server/routes/verify/ui.ts`.
 - Risk: AWS verifier is format-check only — reports "active" for any
-  well-formed key without contacting AWS. May mislead users.
-  - Files/flows: `src/server/routes/verify/providers/aws.ts`
-  - Suggested follow-up: documented as intentional (YAGNI); revisit if real
-    AWS validation is needed (requires SigV4 / `@aws-sdk/client-sts`).
-- Risk: `home.tsx` + `layout.tsx` were mid-refactor in the working tree
-  (Layout extraction) — not deeply audited this run.
-  - Suggested follow-up: verify the home page renders correctly post-refactor
-  and no `<html>/<head>/<body>` duplication now that it uses `<Layout>`.
+  well-formed key without contacting AWS (intentional YAGNI).
+  `src/server/routes/verify/providers/aws.ts`.
