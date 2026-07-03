@@ -34,8 +34,8 @@ export const Layout: FC<LayoutProps> = z
 						}}
 					/>
 				</head>
-				<body class="mx-auto max-w-4xl bg-background p-8 font-sans text-foreground">
-					<nav class="mb-6 flex items-center justify-between border-b border-border pb-2">
+				<body class="mx-auto flex max-w-4xl flex-col bg-background p-8 font-sans text-foreground">
+					<nav class="mb-6 flex shrink-0 items-center justify-between border-b border-border pb-2">
 						<strong>Secrets Watch</strong>
 						<AuthNavActions mode={navMode} />
 					</nav>

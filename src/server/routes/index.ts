@@ -17,6 +17,8 @@ import debugRoutes from './debug/index.js';
 import domainRoutes from './domains/index.js';
 import settingsRoutes from './settings/index.js';
 import legalRoutes from './legal/index.js';
+import verifyRoutes from './verify/index.js';
+import verifyUiRoutes from './verify/ui.js';
 import { ioredisClient } from '../scan/redis.js';
 import { getClientIp } from '../http/clientIp.js';
 import { getSessionContextUser, sessionContextMiddleware } from '../auth/middleware.js';
@@ -111,6 +113,12 @@ app.use(
 app.route('/', authRoutes);
 app.route('/', homeRoutes);
 app.route('/', legalRoutes);
+app.route('/', verifyUiRoutes);
+// Mounted after the rate limiter / session / CSRF-token middleware so the open
+// credential-validation endpoint is still throttled and has request context.
+// The built-in csrf() middleware only validates form posts, so this JSON API
+// remains callable programmatically without a CSRF token, by design.
+app.route('/api', verifyRoutes);
 app.route('/sandbox/demo', sandboxDemoRoutes);
 app.route('/domains', domainRoutes);
 app.route('/settings', settingsRoutes);

@@ -1,4 +1,4 @@
-DROP INDEX "findings_check_id_fingerprint_idx";--> statement-breakpoint
+DROP INDEX IF EXISTS "findings_check_id_fingerprint_idx";--> statement-breakpoint
 CREATE INDEX "findings_scan_id_idx" ON "findings" USING btree ("scan_id");--> statement-breakpoint
 CREATE INDEX "login_tokens_token_hash_idx" ON "login_tokens" USING btree ("token_hash");--> statement-breakpoint
 CREATE INDEX "login_tokens_email_idx" ON "login_tokens" USING btree ("email");--> statement-breakpoint
