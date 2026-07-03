@@ -320,6 +320,11 @@ export const createScanForDomainId = z
 				domainId,
 				error: normalizedError.message,
 			});
+
+			// Re-throw so the caller knows submission failed instead of silently
+			// returning a scanId that points at a failed scan. The scan row has
+			// already been marked failed; the route surfaces a real error page.
+			throw normalizedError;
 		}
 
 		return createScanResultSchema.parse({ scanId: scanRecord.id });

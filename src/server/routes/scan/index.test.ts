@@ -1,6 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { buildScanChecksView } from './index.js';
+import { buildScanChecksView, checkDomainReachability } from './index.js';
 import { scanResultPagePropsSchema } from '../../../views/pages/scanResult.js';
+
+describe('checkDomainReachability (SSRF guard)', () => {
+	it('blocks the cloud metadata endpoint without fetching it', async () => {
+		// Regression: the probe used to fetch the raw user domain before the
+		// pipeline's SSRF defenses ran, exposing 169.254.169.254 etc.
+		const result = await checkDomainReachability('169.254.169.254');
+		expect(result).toBe(false);
+	});
+
+	it('blocks loopback addresses', async () => {
+		expect(await checkDomainReachability('127.0.0.1')).toBe(false);
+	});
+
+	it('blocks private RFC1918 addresses', async () => {
+		expect(await checkDomainReachability('10.0.0.1')).toBe(false);
+		expect(await checkDomainReachability('192.168.1.1')).toBe(false);
+		expect(await checkDomainReachability('172.16.0.1')).toBe(false);
+	});
+
+	it('returns false for "localhost"', async () => {
+		expect(await checkDomainReachability('localhost')).toBe(false);
+	});
+
+	it('returns false for an unparseable input', async () => {
+		// A string with spaces is not a valid URL and must not be fetched.
+		expect(await checkDomainReachability('not a url')).toBe(false);
+	});
+});
 
 describe('buildScanChecksView', () => {
 	it('includes unknown checks so findings are not hidden', () => {

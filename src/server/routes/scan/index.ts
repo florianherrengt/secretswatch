@@ -5,6 +5,7 @@ import type { Context } from 'hono';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import { render } from '../../../lib/response.js';
 import { builtinChecks } from '../../../pipeline/checks.js';
+import { resolveAndCheckHost } from '../../../pipeline/discovery.js';
 import { domainSchema } from '../../../schemas/domain.js';
 import { findingSchema } from '../../../schemas/finding.js';
 import { scanSchema } from '../../../schemas/scan.js';
@@ -50,13 +51,38 @@ const scanRequestState = {
 
 const REACHABILITY_TIMEOUT_MS = 30_000;
 
-const checkDomainReachability = z
+const safeParseUrl = z
+	.function()
+	.args(z.string())
+	.returns(z.union([z.instanceof(URL), z.null()]))
+	.implement((value) => {
+		try {
+			return new URL(value);
+		} catch {
+			return null;
+		}
+	});
+
+export const checkDomainReachability = z
 	.function()
 	.args(z.string().min(1))
 	.returns(z.promise(z.boolean()))
 	.implement(async (domain) => {
 		const url =
 			domain.startsWith('http://') || domain.startsWith('https://') ? domain : `http://${domain}`;
+
+		// SSRF guard: resolve the host and refuse to fetch private/internal/loopback
+		// targets (169.254.169.254, 127.0.0.1, RFC1918, etc.) BEFORE issuing any
+		// request. The pipeline layer applies the same check via resolveAndCheckHost,
+		// but this probe runs before the pipeline and must not bypass that defense.
+		const parsedUrl = safeParseUrl(url);
+		if (parsedUrl === null) {
+			return false;
+		}
+		const isSafeTarget = await resolveAndCheckHost(parsedUrl.hostname);
+		if (!isSafeTarget) {
+			return false;
+		}
 
 		try {
 			const controller = new AbortController();
@@ -274,6 +300,20 @@ scanRoutes.post(
 				const { scanId } = await createScanForDomainId(domainRecord.id);
 
 				return c.redirect(`/scan/${scanId}`, 302);
+			} catch (error) {
+				// createScanForDomainId re-throws when enqueue fails (e.g. Redis down)
+				// instead of silently redirecting to a failed scan. Surface a clear
+				// error so the user knows submission failed.
+				console.error('[scan] Failed to start scan', {
+					error: error instanceof Error ? error.message : String(error),
+				});
+				return c.html(
+					render(ErrorPage, {
+						title: 'Scan could not be started',
+						message: 'Something went wrong while queueing your scan. Please try again in a moment.',
+					}),
+					503,
+				);
 			} finally {
 				scanRequestState.inFlightRequests = Math.max(0, scanRequestState.inFlightRequests - 1);
 			}
