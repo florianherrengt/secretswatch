@@ -9,10 +9,18 @@ import { getAppBaseUrl } from '../config.js';
 const TOKEN_EXPIRY_MINUTES = 15;
 const SESSION_EXPIRY_DAYS = 30;
 
-export const requestMagicLink = z
+export const createMagicLoginLink = z
 	.function()
 	.args(z.string())
-	.returns(z.promise(z.void()))
+	.returns(
+		z.promise(
+			z.object({
+				email: z.string(),
+				loginUrl: z.string(),
+				isVerifiedUser: z.boolean(),
+			}),
+		),
+	)
 	.implement(async (email) => {
 		const normalizedEmail = email.toLowerCase().trim();
 		const [existingUser] = await db.select().from(users).where(eq(users.email, normalizedEmail));
@@ -40,9 +48,24 @@ export const requestMagicLink = z
 		const baseUrl = getAppBaseUrl();
 		const loginUrl = `${baseUrl}/auth/verify?token=${rawToken}`;
 
+		return {
+			email: normalizedEmail,
+			loginUrl,
+			isVerifiedUser: existingUser?.isVerified ?? false,
+		};
+	});
+
+export const requestMagicLink = z
+	.function()
+	.args(z.string())
+	.returns(z.promise(z.void()))
+	.implement(async (email) => {
+		const { email: normalizedEmail, loginUrl, isVerifiedUser } = await createMagicLoginLink(email);
+		const baseUrl = getAppBaseUrl();
+
 		const emailProvider = getEmailProvider();
 
-		if (existingUser?.isVerified) {
+		if (isVerifiedUser) {
 			await emailProvider.send({
 				to: normalizedEmail,
 				subject: 'Your login link',

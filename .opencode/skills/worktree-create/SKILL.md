@@ -25,12 +25,9 @@ The slot is deterministic: `sha256(branchSlug) % 8 + 1`, so the same branch alwa
 
 ## How the worktree `.env` is generated (from main's `.env`)
 
-On `make parallel-create`, the script copies the repo-root `.env` and rewrites the isolation keys above to the slot's values. **The root `.env` is the template.** It must contain the `PG_*`/`REDIS_*`/`COMPOSE_*` keys with defaults that match its own `DATABASE_URL`/`REDIS_URL` ports — `make parallel-create` backfills any that are missing, but keep them in sync by hand when you change a port:
+On `make parallel-create`, the script copies the repo-root `.env` and rewrites the isolation keys above to the slot's values. **The root `.env` is the template.** It must contain the `PG_*`/`REDIS_*`/`COMPOSE_*` keys — `make parallel-create` backfills any that are missing. App/runtime helpers treat `PG_PORT` and `REDIS_PORT` as port overrides for `DATABASE_URL` and `REDIS_URL`.
 
-- `DATABASE_URL` port must equal `PG_PORT`
-- `REDIS_URL` port must equal `REDIS_PORT`
-
-If you change a port in the root `.env`, change it in **both** the URL and the `*_PORT` var. The worktree `.env` overrides only the isolation keys; every other secret (Stripe, Product Hunt, etc.) is inherited from the root `.env`.
+The worktree `.env` overrides only the isolation keys; every other secret (Stripe, Product Hunt, etc.) is inherited from the root `.env`.
 
 ## Create a worktree
 

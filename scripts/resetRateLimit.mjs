@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import Redis from 'ioredis';
+import { getRedisUrl } from './env-urls.mjs';
 
-const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
+const redisUrl = getRedisUrl();
 const redis = new Redis(redisUrl, {
 	enableOfflineQueue: false,
 	maxRetriesPerRequest: null,

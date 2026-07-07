@@ -75,6 +75,43 @@ const csrfOriginHandler = z
 		return normalizeLocalhostOrigin(origin) === normalizeLocalhostOrigin(urlOrigin);
 	});
 
+const STATIC_ASSET_FALLBACK_BROWSER_CACHE_CONTROL = 'public, max-age=3600, must-revalidate';
+const STATIC_ASSET_FALLBACK_CDN_CACHE_CONTROL =
+	'public, max-age=86400, stale-while-revalidate=3600, stale-if-error=86400';
+const STATIC_ASSET_FINGERPRINTED_BROWSER_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+const STATIC_ASSET_FINGERPRINTED_CDN_CACHE_CONTROL =
+	'public, max-age=31536000, stale-if-error=86400';
+const fingerprintedAssetPathPattern = /^\/assets\/[^/?]+\.[a-f0-9]{32}\.[^/?]+$/u;
+
+const isFingerprintedAssetPath = z
+	.function()
+	.args(z.string())
+	.returns(z.boolean())
+	.implement((path) => fingerprintedAssetPathPattern.test(path));
+
+const staticAssetCacheMiddleware = z
+	.function()
+	.args(z.custom<Context>(), z.custom<() => Promise<void>>())
+	.returns(z.promise(z.void()))
+	.implement(async (c, next) => {
+		await next();
+
+		if (c.res.status >= 200 && c.res.status < 300) {
+			const isFingerprinted = isFingerprintedAssetPath(c.req.path);
+			const browserCacheControl = isFingerprinted
+				? STATIC_ASSET_FINGERPRINTED_BROWSER_CACHE_CONTROL
+				: STATIC_ASSET_FALLBACK_BROWSER_CACHE_CONTROL;
+			const cdnCacheControl = isFingerprinted
+				? STATIC_ASSET_FINGERPRINTED_CDN_CACHE_CONTROL
+				: STATIC_ASSET_FALLBACK_CDN_CACHE_CONTROL;
+
+			c.res.headers.set('Cache-Control', browserCacheControl);
+			c.res.headers.set('CDN-Cache-Control', cdnCacheControl);
+			c.res.headers.set('Cloudflare-CDN-Cache-Control', cdnCacheControl);
+		}
+	});
+
+app.use('/assets/*', staticAssetCacheMiddleware);
 app.use('/assets/*', serveStatic({ root: './' }));
 app.use('*', flashMiddleware);
 app.use('*', sessionContextMiddleware);

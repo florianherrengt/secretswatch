@@ -4,6 +4,25 @@ set -euo pipefail
 IMAGE_NAME="${1:-secrets-watch:local}"
 CONTAINER_NAME="smoke-test-$$"
 
+eval "$(
+    node --input-type=module <<'NODE'
+import 'dotenv/config';
+import { getDatabaseUrl, getRedisUrl } from './scripts/env-urls.mjs';
+
+const shellQuote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
+const databaseUrl = new URL(getDatabaseUrl());
+const redisUrl = new URL(getRedisUrl());
+
+databaseUrl.hostname = 'host.docker.internal';
+redisUrl.hostname = 'host.docker.internal';
+
+console.log(`SMOKE_DATABASE_URL=${shellQuote(databaseUrl.toString())}`);
+console.log(`SMOKE_REDIS_URL=${shellQuote(redisUrl.toString())}`);
+console.log(`SMOKE_PG_PORT=${shellQuote(databaseUrl.port)}`);
+console.log(`SMOKE_REDIS_PORT=${shellQuote(redisUrl.port)}`);
+NODE
+)"
+
 cleanup() {
     docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
 }
@@ -20,9 +39,12 @@ echo "Image size: ${SIZE}"
 echo ""
 echo "=== Starting container ==="
 docker run -d --name "${CONTAINER_NAME}" \
+    --add-host=host.docker.internal:host-gateway \
     -e PORT=3000 \
-    -e DATABASE_URL="postgresql://test:test@localhost:5432/test" \
-    -e REDIS_URL="redis://localhost:6379" \
+    -e PG_PORT="${SMOKE_PG_PORT}" \
+    -e REDIS_PORT="${SMOKE_REDIS_PORT}" \
+    -e DATABASE_URL="${SMOKE_DATABASE_URL}" \
+    -e REDIS_URL="${SMOKE_REDIS_URL}" \
     "${IMAGE_NAME}" >/dev/null
 
 echo ""

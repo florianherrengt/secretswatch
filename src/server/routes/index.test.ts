@@ -1,8 +1,11 @@
 /* eslint-disable custom/no-mutable-variables */
 import { beforeAll, describe, it, expect } from 'vitest';
 import type { Hono } from 'hono';
+import { assetPath } from '../../lib/assets.js';
 
 let app: Hono;
+
+const fingerprintedAssetPathPattern = /^\/assets\/[^/?]+\.[a-f0-9]{32}\.[^/?]+$/u;
 
 beforeAll(async () => {
 	process.env.ADMIN_BASIC_AUTH_USERNAME = 'admin';
@@ -31,7 +34,8 @@ describe('GET /', () => {
 		expect(html).toContain('action="/scan" method="post"');
 		expect(html).toContain('name="domain"');
 		expect(html).toContain('name="visitorFingerprint"');
-		expect(html).toContain('/assets/scan-fingerprint.js');
+		expect(html).toContain(assetPath('scan-fingerprint.js'));
+		expect(html.match(/href="\/auth\/sign-in"/g) ?? []).toHaveLength(1);
 	});
 
 	it('renders demo scan target directly in initial html', async () => {
@@ -40,6 +44,28 @@ describe('GET /', () => {
 		const html = await res.text();
 
 		expect(html).toMatch(/name="domain"[^>]*value="[^"]*\/sandbox\/demo"/);
+	});
+});
+
+describe('GET /assets/*', () => {
+	it('serves app static assets with browser and Cloudflare CDN cache headers', async () => {
+		const staticAssetPath = assetPath('timezone-render.js');
+		const isFingerprinted = fingerprintedAssetPathPattern.test(staticAssetPath);
+		const res = await app.request(staticAssetPath);
+
+		expect(res.status).toBe(200);
+		expect(res.headers.get('content-type')).toMatch(/(?:application|text)\/javascript/u);
+		expect(res.headers.get('cache-control')).toBe(
+			isFingerprinted
+				? 'public, max-age=31536000, immutable'
+				: 'public, max-age=3600, must-revalidate',
+		);
+		const expectedCdnCacheControl = isFingerprinted
+			? 'public, max-age=31536000, stale-if-error=86400'
+			: 'public, max-age=86400, stale-while-revalidate=3600, stale-if-error=86400';
+		expect(res.headers.get('cdn-cache-control')).toBe(expectedCdnCacheControl);
+		expect(res.headers.get('cloudflare-cdn-cache-control')).toBe(expectedCdnCacheControl);
+		expect(res.headers.has('set-cookie')).toBe(false);
 	});
 });
 

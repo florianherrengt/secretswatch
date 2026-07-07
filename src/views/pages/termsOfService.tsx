@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { FC } from 'hono/jsx';
+import { assetPath } from '../../lib/assets.js';
 
 export const termsOfServicePagePropsSchema = z.object({
 	contactEmail: z.string().min(1),
@@ -18,7 +19,7 @@ export const TermsOfServicePage: FC<TermsOfServicePageProps> = z
 					<meta charset="utf-8" />
 					<meta name="viewport" content="width=device-width, initial-scale=1" />
 					<title>Terms of Service | Secrets Watch</title>
-					<link rel="stylesheet" href="/assets/app.css" />
+					<link rel="stylesheet" href={assetPath('app.css')} />
 				</head>
 				<body class="mx-auto max-w-4xl bg-background p-8 font-sans text-foreground">
 					<header class="mb-6 flex items-center justify-between border-b border-border pb-2">

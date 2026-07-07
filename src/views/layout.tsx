@@ -1,18 +1,20 @@
 import { z } from 'zod';
 import type { FC, PropsWithChildren } from 'hono/jsx';
 import { AuthNavActions } from './components/AuthNavActions.js';
+import { assetPath } from '../lib/assets.js';
 
 type LayoutProps = PropsWithChildren<{
 	title: string;
 	autoRefreshSeconds?: number;
 	topNavMode?: 'auth' | 'app';
+	showTopNav?: boolean;
 }>;
 
 export const Layout: FC<LayoutProps> = z
 	.function()
 	.args(z.custom<LayoutProps>())
 	.returns(z.custom<ReturnType<FC<LayoutProps>>>())
-	.implement(({ title, children, autoRefreshSeconds, topNavMode }) => {
+	.implement(({ title, children, autoRefreshSeconds, topNavMode, showTopNav = true }) => {
 		const navMode = topNavMode ?? 'auth';
 
 		return (
@@ -24,8 +26,8 @@ export const Layout: FC<LayoutProps> = z
 						<meta http-equiv="refresh" content={String(autoRefreshSeconds)} />
 					) : null}
 					<title>{title} | Secrets Watch</title>
-					<link rel="stylesheet" href="/assets/app.css" />
-					<script src="/assets/timezone-render.js"></script>
+					<link rel="stylesheet" href={assetPath('app.css')} />
+					<script src={assetPath('timezone-render.js')}></script>
 					{/* load posthog */}
 					{/* eslint-disable-next-line custom/ds-no-inline-scripts */}
 					<script
@@ -35,10 +37,12 @@ export const Layout: FC<LayoutProps> = z
 					/>
 				</head>
 				<body class="mx-auto flex max-w-4xl flex-col bg-background p-8 font-sans text-foreground">
-					<nav class="mb-6 flex shrink-0 items-center justify-between border-b border-border pb-2">
-						<strong>Secrets Watch</strong>
-						<AuthNavActions mode={navMode} />
-					</nav>
+					{showTopNav ? (
+						<nav class="mb-6 flex shrink-0 items-center justify-between border-b border-border pb-2">
+							<strong>Secrets Watch</strong>
+							<AuthNavActions mode={navMode} />
+						</nav>
+					) : null}
 					{children}
 				</body>
 			</html>

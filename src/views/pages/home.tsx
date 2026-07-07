@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { FC } from 'hono/jsx';
 import { Layout } from '../layout.js';
 import { AuthNavActions } from '../components/AuthNavActions.js';
+import { assetPath } from '../../lib/assets.js';
 
 export const homePagePropsSchema = z.object({
 	domain: z.string().min(1),
@@ -17,7 +18,7 @@ export const HomePage: FC<HomePageProps> = z
 	.returns(z.custom<ReturnType<FC<HomePageProps>>>())
 	.implement(({ domain, isLoggedIn, message }) => {
 		return (
-			<Layout title="Secrets Watch">
+			<Layout title="Secrets Watch" showTopNav={false}>
 				<div class="mx-auto flex min-h-screen max-w-6xl flex-col px-4 sm:px-6">
 					<header class="py-6">
 						<div class="flex items-center justify-between rounded-xl border border-border bg-card p-4">
@@ -83,7 +84,7 @@ export const HomePage: FC<HomePageProps> = z
 						</a>
 					</footer>
 				</div>
-				<script type="module" src="/assets/scan-fingerprint.js"></script>
+				<script type="module" src={assetPath('scan-fingerprint.js')}></script>
 			</Layout>
 		);
 	});

@@ -105,6 +105,8 @@ jobs:
           CONTAINER_ID=$(docker run -d \
             --add-host=host.docker.internal:host-gateway \
             -e PORT=3000 \
+            -e PG_PORT=5432 \
+            -e REDIS_PORT=6379 \
             -e DATABASE_URL="postgresql://test:test@host.docker.internal:5432/test" \
             -e REDIS_URL="redis://host.docker.internal:6379" \
             "${IMAGE}")

@@ -59,11 +59,10 @@ Durable invariants the codebase must uphold. Bug hunts should check these.
   `secrets_watch_<slot>`, and its own data dirs.
 - **The repo-root `.env` is the template** for every worktree `.env`.
   `make parallel-create` copies it and overrides the isolation keys. The root
-  `.env` MUST keep `DATABASE_URL`/`REDIS_URL` ports in sync with `PG_PORT`/
-  `REDIS_PORT` — a desync here is exactly what broke the full test suite (the
-  app read `localhost:5432` from the URL while the container was on another port).
+  `.env` must define `PG_PORT`/`REDIS_PORT`; app/runtime helpers treat those as
+  port overrides for `DATABASE_URL`/`REDIS_URL` so stale URL ports cannot send
+  the app to the wrong local container.
 - `make parallel-create` backfills any missing isolation keys into the root
-  `.env` (defaults matching `docker-compose.yml`), but hand-edit port changes in
-  BOTH the URL and the `*_PORT` var.
+  `.env` (defaults matching `docker-compose.yml`).
 - Requires the external `workmux` binary (tmux orchestration) on PATH.
 - See `.opencode/skills/worktree-create/SKILL.md` for the full contract.

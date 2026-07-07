@@ -1,10 +1,8 @@
+import 'dotenv/config';
 import { Pool } from 'pg';
+import { getDatabaseUrl } from './env-urls.mjs';
 
-const databaseUrl =
-	process.env.DATABASE_URL ??
-	'postgresql://secrets_watch:secrets_watch@localhost:5432/secrets_watch';
-
-const pool = new Pool({ connectionString: databaseUrl });
+const pool = new Pool({ connectionString: getDatabaseUrl() });
 
 const ensureMigrationsTableSql = `
 CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (

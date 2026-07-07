@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { getDatabaseUrl } from './env-urls.mjs';
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const ROOT = path.resolve(path.dirname(SCRIPT_PATH), '..');
@@ -169,7 +170,7 @@ async function parallelStart(branch) {
 		fail('Runtime health check failed');
 	}
 
-	await validateDatabaseConnectivity(env.DATABASE_URL);
+	await validateDatabaseConnectivity(getDatabaseUrl(env));
 
 	process.stdout.write(`parallel-start ok branch=${plan.branch} slot=${plan.slot}\n`);
 }
@@ -342,8 +343,7 @@ function ensureRootEnvExists() {
 
 // The root .env is the template every worktree .env is generated from. If it
 // is missing the parallel isolation keys, the worktree overrides have nothing
-// to anchor to and DATABASE_URL/PG_PORT can silently desync (the trap that
-// broke the test suite). Backfill any missing keys with defaults that match
+// to anchor to. Backfill any missing keys with defaults that match
 // docker-compose.yml's ${VAR:-default} fallbacks so existing behavior is
 // unchanged. Only missing keys are added; existing values are preserved.
 // Defaults are defined inside the function because the top-level `main()`
@@ -689,7 +689,7 @@ async function validateDatabaseConnectivity(databaseUrl) {
 	try {
 		await pool.query('SELECT 1');
 	} catch {
-		fail('Database connectivity validation failed using DATABASE_URL');
+		fail('Database connectivity validation failed using DATABASE_URL with PG_PORT override');
 	} finally {
 		await pool.end();
 	}

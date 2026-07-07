@@ -105,10 +105,9 @@
   checks (`if (!x)`). Use explicit sentinel comparison for catch defaults.
 - **Port desync between URL and `*_PORT` var** — `.env` hardcoded the port
   inside `DATABASE_URL`/`REDIS_URL` while docker-compose read `PG_PORT`/
-  `REDIS_PORT`. Changing one without the other makes the app hit the wrong
-  DB. The root `.env` is the template for every worktree `.env`; both must
-  stay in sync. `vitest.setup.ts` now loads dotenv so tests read `.env`
-  (previously they fell back to the hardcoded `localhost:5432` default).
+  `REDIS_PORT`. The root `.env` is the template for every worktree `.env`;
+  runtime helpers now treat `PG_PORT`/`REDIS_PORT` as URL port overrides, and
+  `vitest.setup.ts` loads dotenv before db/redis clients are imported.
 - **System Postgres hijacking 5432** — a login-started `postgresql@16`
   (brew) was occupying `localhost:5432`, so the Docker container bound to
   5433 and the app silently talked to the wrong DB (no `secrets_watch`
@@ -151,7 +150,7 @@ secrets_watch does not exist` appears, check `lsof -i :5432` for a non-
   SIGTERM/SIGINT handler, never calls `worker.close()`. Deploy/restart kills
   in-flight jobs → scan stays `pending` forever (UI "running"). Fix:
   `process.on('SIGTERM'/'SIGINT')` → `await Promise.all([scanWorker.close(),
-  schedulerWorker.close()])`. Files: `app.ts`, `scanWorker.ts`,
+schedulerWorker.close()])`. Files: `app.ts`, `scanWorker.ts`,
   `schedulerQueue.ts`.
 - Risk: **No BullMQ retry/stall config anywhere.** No `attempts`,
   `stalledInterval`/`maxStalledCount`, `removeOnComplete`/`removeOnFail`. Jobs
@@ -161,7 +160,7 @@ secrets_watch does not exist` appears, check `lsof -i :5432` for a non-
 - Risk: **SSRF redirect / DNS-rebinding bypass.** `resolveAndCheckHost` runs
   before `fetch(..., redirect:'follow')`, so a redirect/low-TTL-DNS to a
   private IP after the check is never re-validated; final-host check is a
-  hostname *string* compare, not an IP re-check. Fix: check each hop or
+  hostname _string_ compare, not an IP re-check. Fix: check each hop or
   re-run on the final IP. Files: `scanDomain.ts:294-330,757-824`,
   `discovery.ts:318-344`.
 - Risk: **Partial results persisted as `status:'success'`.** Per-resource
@@ -195,7 +194,7 @@ secrets_watch does not exist` appears, check `lsof -i :5432` for a non-
 ## Open risks (auth)
 
 - Risk: **Magic-link flood + user creation on any email.** `requestMagicLink`
-  creates a `users` row (`isVerified:false`) and sends an email for *every*
+  creates a `users` row (`isVerified:false`) and sends an email for _every_
   request, with only the global IP rate limit. An attacker can spam arbitrary
   addresses (email flood, user-table pollution) or enumerate which emails
   already exist. No per-email/per-IP throttle specific to `/auth/request-link`.

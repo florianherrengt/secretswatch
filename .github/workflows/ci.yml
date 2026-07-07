@@ -39,6 +39,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://secrets_watch:secrets_watch@localhost:5432/secrets_watch
       REDIS_URL: redis://localhost:6379
+      PG_PORT: 5432
+      REDIS_PORT: 6379
 
     steps:
       - name: Checkout
@@ -105,6 +107,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://secrets_watch:secrets_watch@localhost:5432/secrets_watch
       REDIS_URL: redis://localhost:6379
+      PG_PORT: 5432
+      REDIS_PORT: 6379
       ADMIN_BASIC_AUTH_USERNAME: admin
       ADMIN_BASIC_AUTH_PASSWORD: changeme
       DEBUG_ENDPOINT: true

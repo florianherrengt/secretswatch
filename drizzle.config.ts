@@ -1,14 +1,12 @@
+import 'dotenv/config';
 import { defineConfig } from 'drizzle-kit';
-
-const databaseUrl =
-	process.env.DATABASE_URL ??
-	'postgresql://secrets_watch:secrets_watch@localhost:5432/secrets_watch';
+import { getDatabaseUrl } from './src/server/config.js';
 
 export default defineConfig({
 	schema: './src/server/db/schema.ts',
 	out: './drizzle',
 	dialect: 'postgresql',
 	dbCredentials: {
-		url: databaseUrl,
+		url: getDatabaseUrl(),
 	},
 });
