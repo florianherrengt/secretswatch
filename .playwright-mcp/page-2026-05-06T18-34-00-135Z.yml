@@ -1,0 +1,20 @@
+- generic [ref=e2]:
+    - banner [ref=e3]:
+        - generic [ref=e4]:
+            - strong [ref=e5]: Secrets Watch
+            - link "Get started" [ref=e6] [cursor=pointer]:
+                - /url: /auth/sign-in
+    - generic [ref=e8]:
+        - generic [ref=e9]:
+            - heading "Scan websites for exposed secrets" [level=1] [ref=e10]
+            - paragraph [ref=e11]: Enter any public URL to run a security scan.
+        - generic [ref=e12]:
+            - textbox "Enter any URL to scan" [ref=e13]: app.secrets.watch/sandbox/demo
+            - button "Scan now" [ref=e14] [cursor=pointer]
+    - contentinfo [ref=e15]:
+        - text: © 2026 Secrets Watch ·
+        - link "Terms of Service" [ref=e16] [cursor=pointer]:
+            - /url: /terms
+        - text: ·
+        - link "Privacy Policy" [ref=e17] [cursor=pointer]:
+            - /url: /privacy

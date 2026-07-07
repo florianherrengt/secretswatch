@@ -1,0 +1,60 @@
+- generic [ref=e2]:
+    - generic [ref=e4]:
+        - heading "Find leaked secrets in your frontend" [level=1] [ref=e5]
+        - paragraph [ref=e6]: Scan your website for exposed API keys, tokens and credentials before attackers do.
+        - generic [ref=e7]:
+            - link "Get Started" [ref=e8] [cursor=pointer]:
+                - /url: https://app.secrets.watch
+            - link "Contact Us" [ref=e9] [cursor=pointer]:
+                - /url: '#contact'
+    - generic [ref=e10]:
+        - heading "Features" [level=2] [ref=e11]
+        - generic [ref=e12]:
+            - article [ref=e13]:
+                - heading "Frontend secret detection" [level=3] [ref=e14]
+                - paragraph [ref=e15]: Scan compiled JavaScript bundles and public assets to find exposed credentials that ship to users’ browsers.
+            - article [ref=e16]:
+                - heading "Real findings, not noise" [level=3] [ref=e17]
+                - paragraph [ref=e18]: Detect high-confidence leaks like API keys, JWTs, credential URLs and high-entropy secrets with clear signal.
+            - article [ref=e19]:
+                - heading "Precise locations" [level=3] [ref=e20]
+                - paragraph [ref=e21]: Every finding includes exact file, path, and context so you can fix issues quickly without digging.
+            - article [ref=e22]:
+                - heading "Modern framework support" [level=3] [ref=e23]
+                - paragraph [ref=e24]: Works with real-world builds from frameworks like Next.js, Vite and other bundled apps.
+            - article [ref=e25]:
+                - heading "Continuous monitoring" [level=3] [ref=e26]
+                - paragraph [ref=e27]: Run scheduled scans, track history and get alerted when new secrets appear.
+            - article [ref=e28]:
+                - heading "No setup required" [level=3] [ref=e29]
+                - paragraph [ref=e30]: Paste a URL and start scanning immediately.
+                - paragraph [ref=e31]: No installation, no configuration.
+    - generic [ref=e33]:
+        - heading "Photos" [level=2] [ref=e34]
+        - generic [ref=e35]:
+            - link "Photo 1" [ref=e36] [cursor=pointer]:
+                - /url: /images/c6e5de52-ebbf-4aea-8673-d405be3b9fbf.jpeg
+                - img "Photo 1" [ref=e37]
+            - link "Photo 2" [ref=e38] [cursor=pointer]:
+                - /url: /images/0db35861-2a9b-4a03-930c-0d358cdbc85e.jpeg
+                - img "Photo 2" [ref=e39]
+    - generic [ref=e41]:
+        - generic [ref=e42]:
+            - heading "Contact us" [level=2] [ref=e43]
+            - paragraph [ref=e44]: We go beyond automated scans with full-stack security audits across your frontend, APIs and cloud infrastructure (AWS and more) to uncover real-world exposure risks and provide clear remediation steps.
+        - generic [ref=e46]:
+            - textbox "Your email address" [ref=e48]
+            - textbox "Your message" [ref=e50]
+            - generic [ref=e51]:
+                - paragraph [ref=e52]:
+                    - text: This site is protected by
+                    - link "reCAPTCHA" [ref=e53] [cursor=pointer]:
+                        - /url: https://developers.google.com/recaptcha/
+                    - text: and Google's
+                    - link "Privacy Policy" [ref=e54] [cursor=pointer]:
+                        - /url: https://policies.google.com/privacy
+                    - text: and
+                    - link "Terms of Service" [ref=e55] [cursor=pointer]:
+                        - /url: https://policies.google.com/terms
+                    - text: apply.
+                - button "Send" [ref=e56] [cursor=pointer]

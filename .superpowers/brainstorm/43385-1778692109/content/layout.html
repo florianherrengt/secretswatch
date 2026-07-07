@@ -1,0 +1,114 @@
+<h2>Credential Checker — Layout Options</h2>
+<p class="subtitle">Which page layout feels right for a marketing-friendly credential checker?</p>
+
+<div class="cards">
+	<div class="card" data-choice="centered" onclick="toggleSelect(this)">
+		<div class="card-image">
+			<div class="mockup">
+				<div class="mockup-header">A: Centered Single Card</div>
+				<div
+					class="mockup-body"
+					style="display: flex; align-items: center; justify-content: center; min-height: 320px"
+				>
+					<div style="width: 100%; max-width: 480px">
+						<div class="mock-nav" style="justify-content: center; margin-bottom: 24px">
+							Secrets Watch
+						</div>
+						<div style="text-align: center; margin-bottom: 16px">
+							<div class="label" style="margin-bottom: 8px">CREDENTIAL CHECKER</div>
+							<h3 style="margin: 0">Is your API key exposed?</h3>
+							<p style="color: #888; font-size: 13px; margin: 8px 0 0">
+								Check if your credentials are valid — see how fast an attacker could use them.
+							</p>
+						</div>
+						<div style="background: #1a1a2e; border-radius: 8px; padding: 20px">
+							<div style="margin-bottom: 12px">
+								<div class="label" style="margin-bottom: 4px">Provider</div>
+								<select class="mock-input" style="width: 100%">
+									<option>OpenAI</option>
+									<option>GitHub</option>
+									<option>Stripe</option>
+								</select>
+							</div>
+							<div style="margin-bottom: 16px">
+								<div class="label" style="margin-bottom: 4px">API Key</div>
+								<input class="mock-input" style="width: 100%" placeholder="sk-..." />
+							</div>
+							<button class="mock-button" style="width: 100%">Check credential</button>
+						</div>
+						<div
+							style="
+								margin-top: 16px;
+								background: #1a1a2e;
+								border-radius: 8px;
+								padding: 16px;
+								text-align: center;
+							"
+						>
+							<span style="font-size: 24px">✗</span>
+							<p style="margin: 4px 0 0; color: #ff6b6b; font-weight: 600">
+								Invalid — this key doesn't work
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="card-body">
+			<h3>Centered Card</h3>
+			<p>Focused, clean. One thing on the page. Easy to understand immediately.</p>
+		</div>
+	</div>
+
+	<div class="card" data-choice="split" onclick="toggleSelect(this)">
+		<div class="card-image">
+			<div class="mockup">
+				<div class="mockup-header">B: Split — Explainer + Form</div>
+				<div class="mockup-body" style="display: flex; min-height: 320px">
+					<div
+						style="
+							flex: 1;
+							padding: 24px;
+							display: flex;
+							flex-direction: column;
+							justify-content: center;
+						"
+					>
+						<div class="label" style="margin-bottom: 8px">CREDENTIAL CHECKER</div>
+						<h3 style="margin: 0 0 8px">How fast could an attacker use your leaked key?</h3>
+						<p style="color: #888; font-size: 13px; margin: 0 0 16px">
+							We scan websites for exposed secrets. Try checking one of your keys to see how easy it
+							is to verify a stolen credential.
+						</p>
+						<div style="background: #1a1a2e; border-radius: 8px; padding: 12px; font-size: 12px">
+							<p style="margin: 0 0 4px; color: #4ade80">✓ No keys are stored or logged</p>
+							<p style="margin: 0 0 4px; color: #4ade80">✓ Checked over encrypted connection</p>
+							<p style="margin: 0; color: #4ade80">✓ Supports 5 major providers</p>
+						</div>
+					</div>
+					<div style="flex: 1; padding: 24px; display: flex; align-items: center">
+						<div style="width: 100%; background: #1a1a2e; border-radius: 8px; padding: 20px">
+							<div style="margin-bottom: 12px">
+								<div class="label" style="margin-bottom: 4px">Provider</div>
+								<select class="mock-input" style="width: 100%">
+									<option>OpenAI</option>
+									<option>GitHub</option>
+									<option>Stripe</option>
+								</select>
+							</div>
+							<div style="margin-bottom: 16px">
+								<div class="label" style="margin-bottom: 4px">API Key</div>
+								<input class="mock-input" style="width: 100%" placeholder="sk-..." />
+							</div>
+							<button class="mock-button" style="width: 100%">Check credential</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="card-body">
+			<h3>Split — Explainer + Form</h3>
+			<p>Left side sells the story, right side is the form. More context but wider.</p>
+		</div>
+	</div>
+</div>
